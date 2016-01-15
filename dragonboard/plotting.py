@@ -167,7 +167,8 @@ class DragonBrowser(QtGui.QMainWindow):
             self.axs['high'].set_xlabel('Time Slice')
 
         for gain in self.gains:
-            for channel, stop_cell in enumerate(event.header.stop_cells):
+            for channel in range(event.data.shape[0]):
+                stop_cell = event.header.stop_cells[channel][gain]
                 x = np.arange(event.roi)
                 if self.cb_physical.isChecked():
                     x = (x + stop_cell) % 4096
