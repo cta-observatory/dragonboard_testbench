@@ -1,5 +1,4 @@
 # programm calculates statistics (mean offsets) on the fly and creates a list with all data.
-# all channes and low/gain has to be implemented!
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -23,11 +22,12 @@ def offset_calc(filename, pixelindex, gaintype):
         for event in tqdm(generator):
             data = np.full(4096, np.nan)
             stop_cell = event.header.stop_cells[pixelindex]
+            #print(stop_cell)
             roi = event.roi
             data[:roi] = event.data[gaintype][pixelindex]
-            stats.add(np.roll(data, stop_cell))
-
-            #np.savetxt('offsets.csv', np.column_stack([stats.mean, stats.std]), delimiter=',') # give out text file with data
+            stats.add(np.roll(data, stop_cell[1])) # that [1] is insane. how was it before?
+            np.savetxt('offsets_{}_channel{}_{}-gain.csv'.format(filename, pixelindex, gaintype), np.column_stack([stats.mean, stats.std]), delimiter=',') # give out text file with data           
+ 
 
         # plot means with RMS
         plt.title("channel %s %s" %(pixelindex, gaintype))
@@ -44,7 +44,7 @@ def offset_calc(filename, pixelindex, gaintype):
 
 
 if __name__ == '__main__':
-    for pixelindex in range(8):
+    for pixelindex in range(2):
         # calculate mean offset & RMS for every capacitor and plot the data.
         offset_calc('Ped444706_1.dat', pixelindex, "low")
         offset_calc('Ped444706_1.dat', pixelindex, "high")
