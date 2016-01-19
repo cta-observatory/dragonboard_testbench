@@ -8,10 +8,16 @@ from collections import defaultdict
 from functools import partial
 from matplotlib.colors import ColorConverter
 import os
+import sys
 
 from .io import EventGenerator
 
 color_converter = ColorConverter()
+
+
+class NavigationToolbar(NavigationToolbar2QT):
+    toolitems = [t for t in NavigationToolbar2QT.toolitems if
+                 t[0] in ('Home', 'Pan', 'Zoom', 'Subplots', 'Save', None)]
 
 
 def mpl2rgb(color):
@@ -39,23 +45,23 @@ class DragonBrowser(QtGui.QMainWindow):
 
         self.file = None
         self.open_new_file(filename)
+        if not self.file:
+            sys.exit()
         self.generator = EventGenerator(self.file)
         self.dragon_event = next(self.generator)
         self.gains = self.dragon_event.data.dtype.names
         self.n_channels = self.dragon_event.data.shape[0]
         self.init_gui()
 
-    def open_new_file(self, filename):
-        if self.file:
-            self.file.close()
+    def open_new_file(self, filename=None):
         if not filename:
             filename = QtGui.QFileDialog.getOpenFileName(
                 self, 'Open file', os.environ['HOME']
             )
         if filename:
+            if self.file:
+                self.file.close()
             self.file = open(filename, 'rb')
-        else:
-            raise IOError('No File selected')
 
     def init_gui(self):
         self.canvas = FigureCanvas(self, 12.8, 7.2)
@@ -67,7 +73,7 @@ class DragonBrowser(QtGui.QMainWindow):
         self.axs['low'].set_title('Low Gain Channel')
         self.axs['high'].set_title('High Gain Channel')
 
-        self.navbar = NavigationToolbar2QT(self.canvas, self)
+        self.navbar = NavigationToolbar(self.canvas, self)
         self.toolbar = self.addToolBar('Test')
         self.toolbar.addWidget(self.navbar)
 
@@ -111,7 +117,12 @@ class DragonBrowser(QtGui.QMainWindow):
         cb.toggle()
         layout.addWidget(cb)
         self.rescale_box = cb
-        self.statusBar().insertWidget(0, bottom_frame)
+
+        cb = QtGui.QCheckBox('Physical Cell', bottom_frame)
+        cb.setFocusPolicy(QtCore.Qt.NoFocus)
+        cb.stateChanged.connect(self.update)
+        layout.addWidget(cb)
+        self.cb_physical = cb
 
         button = QtGui.QPushButton(bottom_frame)
         button.clicked.connect(self.previous_event)
@@ -125,9 +136,10 @@ class DragonBrowser(QtGui.QMainWindow):
         button.setText('Next Event')
         layout.addWidget(button)
 
+        self.statusBar().insertWidget(0, bottom_frame)
         for ax in self.axs.values():
-            ax.set_xlabel('Physical Cell')
-            ax.set_ylabel('ADC counts')
+            ax.set_ylabel('ADC Counts')
+        self.axs['high'].set_xlabel('Time Slice')
 
         self.fig.tight_layout()
         self.update()
@@ -149,10 +161,17 @@ class DragonBrowser(QtGui.QMainWindow):
 
     def update(self):
         event = self.dragon_event
+        if self.cb_physical.isChecked():
+            self.axs['high'].set_xlabel('Physical Cell')
+        else:
+            self.axs['high'].set_xlabel('Time Slice')
 
         for gain in self.gains:
-            for channel, stop_cell in enumerate(event.header.stop_cells):
-                x = np.arange(stop_cell, stop_cell + event.roi) % 4096
+            for channel in range(event.data.shape[0]):
+                stop_cell = event.header.stop_cells[channel][gain]
+                x = np.arange(event.roi)
+                if self.cb_physical.isChecked():
+                    x = (x + stop_cell) % 4096
                 self.plots[gain][channel].set_data(x, event.data[gain][channel])
 
         for ax in self.axs.values():
