@@ -1,7 +1,20 @@
-""" Plot Dragon Board Raw
+""" low_high_gain_calib
 
-Show drag data interactively. Just click on the plotting canvas to
-see the next event.
+Reads in all dat files in a folder and caluclates for each dat file the ratio between the signal 
+in the high gain to the low gain channel.
+Therefore the following steps are performed:
+- Rough baseline substraction (substracting the mean of the first 20 slices)
+- finding the maximum amplitude in low and high gain channel in each pixel
+- calculating the ratio between the max amplitudes for each pixel
+- averaging over all events of the dat file
+The calculated ratio (one per dat file) is than plotted against the average maximum amplitude of the
+high gain channel for each pixel.
+You would expect for low high gain amplitudes noise effects and therefore a small ratio,
+for high high gain values saturation effect and therefore a small ratio,
+and only for middle high gain values the correct ratio (which should be roughly 20)
+
+The dat files should have injected pulses (or even photon signals) in all pixels. The height of the
+pulses should differ from file to file (but not from event to event in one file)
 
 
 Usage:
@@ -69,9 +82,9 @@ def main():
             pulseMaxHigh = np.zeros((num_channels,nEvents))
             for i,event in enumerate(generator):
                 for pix in range(num_channels):
-                    dataLow = event.data["low"][pix]
+                    dataLow = event.data["low"][pix].astype(float)
                     dataLow -= estimateBaseline(dataLow,0,20)
-                    dataHigh = event.data["high"][pix]
+                    dataHigh = event.data["high"][pix].astype(float)
                     dataHigh -= estimateBaseline(dataHigh,0,20)
                     pulsePositionsLow[pix][i], pulseMaxLow[pix][i] = find_max_amplitude(dataLow,0,90)
                     pulsePositionsHigh[pix][i], pulseMaxHigh[pix][i] = find_max_amplitude(dataHigh,0,90)

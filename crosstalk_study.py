@@ -1,7 +1,20 @@
-""" Plot Dragon Board Raw
+""" crosstalk_study
 
-Show drag data interactively. Just click on the plotting canvas to
-see the next event.
+Read in the dedicated crosstalk dat files in one folder 
+(data files with an injected pulse in one pixel).
+Calculates the crosstalk matrix by:
+- caluculating the arrival time of the injected pulse for each event
+- shifting all timeseries, so that the arrival time of the injected pulse is at position 0
+- averaging the shifted timeseries over all events in a range from -20 to 20 (around the arrival time)
+- calculating the crosstalk by the ratio between the maximum in one channel to the maximum of the pixel
+  with the injected pulse
+
+At the moment there is a very rough baseline substraction, by averaging over the first 13 slices and
+substracting the averaged value
+
+The name of the dat files is supposed to be:
+<folder>/CtCh{nr of pixel with injected pulse}{H: high signal inserted ; L: low signal inserted}
+e.g. IP192.168.1.1/CrossTalk/CtCh2L.dat (a low signal was inserted in pixel 2)
 
 
 Usage:
@@ -49,13 +62,13 @@ def main():
 
     fig_matrix = dict()
     ax_matrix = dict()
-    fig_matrix["low"],ax_matrix["low"] = plt.subplots(1,1,figsize=(20,20))
-    fig_matrix["high"],ax_matrix["high"] = plt.subplots(1,1,figsize=(20,20))
+    fig_matrix["low"],ax_matrix["low"] = plt.subplots(1,1,figsize=(12,12))
+    fig_matrix["high"],ax_matrix["high"] = plt.subplots(1,1,figsize=(12,12))
 
     fig_averaged = dict()
     axes_averaged = dict()
-    fig_averaged["low"], axes_averaged["low"] = plt.subplots(8,8,figsize=(20,20))
-    fig_averaged["high"], axes_averaged["high"] = plt.subplots(8,8,figsize=(20,20))
+    fig_averaged["low"], axes_averaged["low"] = plt.subplots(8,8,figsize=(12,12))
+    fig_averaged["high"], axes_averaged["high"] = plt.subplots(8,8,figsize=(12,12))
 
     for gainChannel in ["high","low"]:
         if gainChannel == "high":
@@ -100,7 +113,6 @@ def main():
 
                 # plt.legend()
                 # plt.show()
-        pprint.pprint(crosstalkRatio)
         matshowPlot = ax_matrix[gainChannel].matshow(crosstalkRatio,cmap='hot',vmax=5)
         plt.colorbar(matshowPlot,ax = ax_matrix[gainChannel],label="crosstalk / %")
         ax_matrix[gainChannel].set_ylabel("pixel with injected pulse")
