@@ -23,7 +23,6 @@ def offset_calc(filename, pixelindex, gaintype):
 
         # calculate mean using Max's method
         for event in tqdm(generator, total=max_events):
-        #for event in generator:
             data = np.full(4096, np.nan)
             stop_cell = event.header.stop_cells[pixelindex]
             #print(stop_cell) 
@@ -35,15 +34,12 @@ def offset_calc(filename, pixelindex, gaintype):
                 stop_cell_array_pos = 0
             else:
                 stop_cell_array_pos = 1
+
             # do actual calculation. data is added throughout the array starting at stop cell
             stats.add(np.roll(data, stop_cell[stop_cell_array_pos])) # that [1] is insane. how was it before? (FORMER VERSION!)
-            
-            # # assert a folder "offsets" where to save .csv's
-            # if not os.path.exists("offsets"):
-            #     os.makedirs("offsets")
-            # # save data as .csv
-            # #np.savetxt("/offsets",'offsets_{}_channel{}_{}-gain.csv'.format(filename, pixelindex, gaintype), np.column_stack([stats.mean, stats.std]), delimiter=',')       
-            np.savetxt('offsets_{}_channel{}_{}-gain.csv'.format(filename, pixelindex, gaintype), np.column_stack([stats.mean, stats.std]), delimiter=',')
+
+            # save data as .csv in declared directory
+            np.savetxt('{}offsets_{}_channel{}_{}-gain.csv'.format(save_data_to("offsets"), filename, pixelindex, gaintype), np.column_stack([stats.mean, stats.std]), delimiter=',')       
 
         # plot means with RMS
         plt.title("file: %s, channel %s, %s gain" %(filename, pixelindex, gaintype))
@@ -58,10 +54,21 @@ def offset_calc(filename, pixelindex, gaintype):
         plt.figure()
         # plt.xlim(0,4096)
 
+# create an output folder if not existent. save all generated data to this folder.
+def save_data_to(output_folder_name): # written while seen from the current executing directory
+
+    # assert a folder "output_folder_name" where to save .csv's
+    if not os.path.exists(output_folder_name):
+        os.makedirs(output_folder_name)
+
+    # declare an output directory to save the processed data
+    output_directory = os.getcwd() + "/" + output_folder_name + "/" # creates a/path/to/your/files/output_folder_name
+    #print(output_directory)
+
+    return output_directory
+
 
 if __name__ == '__main__':
-    #path = "/home/mario/Programs/IP192.168.1.1/Pedestal/" # starts from current directory
-    #for filename in glob.glob(os.path.join(path, '*.dat')):  
     for filename in glob.glob('*.dat'): # search for all .dat's in the current directory
         print("reading file: %s" % (filename))
         for pixelindex in range(1):
