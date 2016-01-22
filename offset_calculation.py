@@ -18,8 +18,8 @@ def offset_calc(pixelindex, gaintype):
 
         with open(filename, "rb") as f: # open a file and call it f. "rb": read, file is binary
 
-            max_events = 10 # 1000 at all
-            generator = EventGenerator(f, max_events=max_events) #, max_events=50) #  
+            max_events = 1000 # 1000 at all
+            generator = EventGenerator(f, max_events=max_events) 
             next(generator) # leave the first event as it is reasonably shifted to low caps
             
             # give out pixelindex (= channel) and gaintype during calculation to maintain overview of progress
@@ -79,21 +79,21 @@ def save_data_to(output_folder_name): # written while seen from the current exec
 
 
 
-def offset_apply(csv_filename):
+def offset_apply(csv_filename, filename):
     offset, rms = np.loadtxt(csv_filename, delimiter=",", usecols=(0, 1), unpack=True) # read every column of the .csv as each an array offset and rms. method's options are important!
-    #print(filename)
+    print(filename)
     #print(offset)
     #print(rms)
     # initialize stats array on which calculations are carried out
     stats = RunningStats(shape=4096)
 
     #for filename in glob.glob('*.dat'): # search for all .dat's in the current directory
-    for filename in glob.glob('Ped444442_1.dat'): # search for all .dat's in the current directory
+    for filename in glob.glob(filename): # search for all .dat's in the current directory
 
         with open(filename, "rb") as f: # open a file and call it f. "rb": read, file is binary
 
-            max_events = 1 # 1000 at all
-            generator = EventGenerator(f, max_events=max_events) #, max_events=50) #  
+            max_events = 1000 # 1000 at all(?)
+            generator = EventGenerator(f, max_events=max_events) 
             #next(generator) # leave the first event as it is reasonably shifted to low caps
             
             # give out pixelindex (= channel) and gaintype during calculation to maintain overview of progress
@@ -117,28 +117,28 @@ def offset_apply(csv_filename):
                 # data is subtracted throughout the array starting at stop cell
                 calibrated_data = np.subtract(np.roll(data, stop_cell[stop_cell_array_pos]), offset) # that [...] is insane. how was it before?
 
-                # plot calibrated data
-                plt.title("uncalibrated data: channel %s, %s gain" %(pixelindex, gaintype))
-                plt.errorbar(
-                    np.arange(4096),
-                    np.roll(data, stop_cell[stop_cell_array_pos]),
-                    yerr=rms, # yerr = y-error bars
-                    fmt="+", # fmt means format
-                    markersize=3,
-                    capsize=1, # frame bars of error bars
-                )
-                plt.figure()
+    # plot calibrated data
+    plt.title("uncalibrated data: channel %s, %s gain" %(pixelindex, gaintype))
+    plt.errorbar(
+        np.arange(4096),
+        np.roll(data, stop_cell[stop_cell_array_pos]),
+        yerr=rms, # yerr = y-error bars
+        fmt="+", # fmt means format
+        markersize=3,
+        capsize=1, # frame bars of error bars
+    )
+    #plt.figure()
 
-                # plot calibrated data
-                plt.title("calibrated data: channel %s, %s gain" %(pixelindex, gaintype))
-                plt.errorbar(
-                    np.arange(4096),
-                    calibrated_data,
-                    yerr=rms, # yerr = y-error bars
-                    fmt="+", # fmt means format
-                    markersize=3,
-                    capsize=1, # frame bars of error bars
-                )
+    # plot calibrated data
+    plt.title("calibrated data: %s, channel %s, %s gain" %(filename, pixelindex, gaintype))
+    plt.errorbar(
+        np.arange(4096),
+        calibrated_data,
+        yerr=rms, # yerr = y-error bars
+        fmt="+", # fmt means format
+        markersize=3,
+        capsize=1, # frame bars of error bars
+    )
 
 
 
@@ -151,6 +151,8 @@ if __name__ == '__main__':
         for gaintype in ["low"]: #, "high"]:
             #offset_calc(pixelindex, gaintype)
             for csv_filename in glob.glob('*.csv'):
-                offset_apply(csv_filename)
+                #offset_apply(csv_filename, "Ped444442_1.dat")
+                #offset_apply(csv_filename, "Ped444442_67.dat")
+                offset_apply(csv_filename, "TPGain40.dat")
 
     plt.show()
