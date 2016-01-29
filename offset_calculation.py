@@ -1,20 +1,22 @@
 """
-##########################################################
-* calculate offset constants and RMS from pedestal files *
-##########################################################
+##########################################################################
+*                     Dragon board readout software                      *
+* calculate offset constants and standard deviations from pedestal files *
+##########################################################################
 
 annotations:
 
-- filedirectory is the path to the directory of your pedestal files
+- inputdirectory is the path to the directory of your pedestal files
 - outputdirectory is the directory where the calibration constants are written to
 
 
 Usage:
-  offset_calculation.py <filedirectory> <outputdirectory>
+  offset_calculation.py [--p] <inputdirectory> <outputdirectory>
   offset_calculation.py (-h | --help)
   offset_calculation.py --version
 
 Options:
+  --p           Plot the calculated mean offsets with stdandard deviation [default: false]
   -h --help     Show this screen.
   --version     Show version.
 
@@ -22,86 +24,115 @@ Options:
 
 import numpy as np
 import matplotlib.pyplot as plt
-from dragonboard import EventGenerator # custom event generator
-from dragonboard.runningstats import RunningStats # Max's method to do statistics on the fly 
-from tqdm import tqdm # enable to show progress
-import glob # enable to search for files in directories
+from dragonboard import EventGenerator
+from dragonboard.runningstats import RunningStats
+from tqdm import tqdm
+import glob
 import os
-from docopt import docopt # write your own menu! furthermore control terminal input parameters
+from docopt import docopt
+import sys
 
 
-def offset_calc(filedirectory, outputdirectory, pixelindex, gaintype):
-    """ calculate mean offset & RMS for every capacitor and plot the data. the data is saved as .csv files.
+def offset_calc(inputdirectory, outputdirectory, do_plot):
+    """ calculate mean offset & standard deviation for every capacitor and plot the data. the data is saved as .csv files.
         The .csv files are named offsets_channel<pixelindex>_<gaintype>-gain. 
         this FORMAT MUST NOT BE CHANGED
     """
 
-    stats = RunningStats(shape=4096) # initialize stats array on which calculations are carried out
+    for pixelindex in range(1):
 
-    for filename in glob.glob(os.path.join(filedirectory, 'Ped*.dat')): # search for all .dat's in the current directory
+        for gaintype in ["low", "high"]:
 
-        with open(filename, "rb") as f: # open a file and call it f. "rb": read, file is binary
+            stats = RunningStats(shape=4096)
 
-            max_events = 1000 # 1000 at all
-            generator = EventGenerator(f, max_events=max_events) 
-            next(generator) # leave the first event as it is reasonably shifted to low caps
-            
-            # give out pixelindex (= channel) and gaintype during calculation to maintain overview of progress
-            print("reading file: %s, channel %s, %s gain" % (filename, pixelindex, gaintype))
+            for filename in glob.glob(os.path.join(inputdirectory, 'Ped*.dat')):
 
-            # calculate mean using Max's method
-            for event in tqdm(generator, total=max_events):
-                data = np.full(4096, np.nan)
-                stop_cell = event.header.stop_cells[pixelindex]
-                #print(stop_cell) 
-                roi = event.roi
-                data[:roi] = event.data[gaintype][pixelindex]
+                with open(filename, "rb") as f:
 
-                # assert correct stop cell. Assumed for the if-structure: stop cells(sc) are arranged in array [(channel0_sc_low, channel0_sc_high), ..., (channel7_sc_low), channel7_sc_high)]
-                if gaintype == "low":
-                    stop_cell_array_pos = 0
-                else:
-                    stop_cell_array_pos = 1
+                    max_events = 1000
+                    generator = EventGenerator(f, max_events=max_events) 
+                    
+                    print("reading file: %s, channel %s, %s gain" % (filename, pixelindex, gaintype))
 
-                # data is added throughout the array starting at stop cell
-                stats.add(np.roll(data, stop_cell[stop_cell_array_pos])) # that [...] is insane. how was it before?
+                    for event in tqdm(generator, total=max_events):
+
+                        data = np.full(4096, np.nan)
+                        stop_cell = event.header.stop_cells[pixelindex]
+                        roi = event.roi
+                        data[:roi] = event.data[gaintype][pixelindex]
+
+                        # assert correct stop cell. Assumed for the if-structure: stop cells are arranged in array 
+                        # [(channel0_sc_low, channel0_sc_high), ..., (channel7_sc_low), channel7_sc_high)]. IS THAT APPROACH CORRECT?!
+                        if gaintype == "low":
+
+                            stop_cell_array_pos = 0
+
+                        else:
+
+                            stop_cell_array_pos = 1
+
+                        stats.add(np.roll(data, stop_cell[stop_cell_array_pos]))
+
+            np.savetxt(
+                '{}offsets_channel{}_{}-gain.csv'.format(outputdirectory, pixelindex, gaintype), 
+                np.column_stack([stats.mean, stats.std]),
+                delimiter=','
+            )
+
+            if do_plot == True:
+
+                plt.title("offsets: channel %s, %s gain" %(pixelindex, gaintype))
+                plt.xlabel('time slice / DRS4 cell')
+                plt.ylabel('mean offset [ADC counts]')
+                plt.errorbar(
+                    np.arange(4096),
+                    stats.mean,
+                    yerr=stats.std,
+                    fmt="+",
+                    markersize=3,
+                    capsize=1,
+                )
+                plt.xlim(0,4096)
+                plt.figure()
+
+                plt.xlabel('time slice / DRS4 cell')
+                plt.ylabel('standard deviation [ADC counts]')
+                plt.axis([0,4096,0,40])
+                plt.title("standard deviation: channel %s, %s gain" %(pixelindex, gaintype))
+                plt.step(stats.std, "ro",label="standard deviation(Cap.No.)")
+                plt.legend()
+                plt.figure()
 
 
 
-    # save means and RMS's of data as .csv in declared directory
-    np.savetxt(
-        '{}offsets_channel{}_{}-gain.csv'.format(outputdirectory, pixelindex, gaintype), 
-        np.column_stack([stats.mean, stats.std]), delimiter=','
-    )
+def scan_pedestalfile_amount(inputdirectory):
+    """ assert Ped*.files to exist """
 
-    # plot means with RMS
-    plt.title("channel %s, %s gain" %(pixelindex, gaintype))
-    plt.errorbar(
-        np.arange(4096),
-        stats.mean,
-        yerr=stats.std, # yerr = y-error bars
-        fmt="+", # fmt means format
-        markersize=3,
-        capsize=1, # frame bars of error bars
-    )
-    plt.xlim(0,4096)
-    plt.figure()
+    amount_of_files = 0
 
-# def scan_file_amount(filedirectory):
-#     for filename in glob.glob(os.path.join(filedirectory, 'Ped*.dat')):
-#         list(filename)
-#     print("found {} files to perform calibration" % (list(filename))
+    for filename in glob.glob(os.path.join(inputdirectory, 'Ped*.dat')):
+
+        amount_of_files += 1
+
+    if amount_of_files == 0:
+
+        sys.exit("Error: no files found to perform offset calculation")
+
+    else:
+
+        print("found %s files to perform calibration" %(amount_of_files))
+
+
 
 if __name__ == '__main__':
 
-    # docopt arguments
-    arguments = docopt(__doc__, version='YEAH!')
-    filedirectory = arguments["<filedirectory>"]
+    arguments = docopt(__doc__, version='Dragon Board Offset Calculation v.1.0')
+    inputdirectory = arguments["<inputdirectory>"]
     outputdirectory = arguments["<outputdirectory>"]
+    do_plot = arguments["--p"]
 
-    # calculation
-    for pixelindex in range(1): # max range = number of channels
-        for gaintype in ["low", "high"]:
-            offset_calc(filedirectory, outputdirectory, pixelindex, gaintype)
+    scan_pedestalfile_amount(inputdirectory)
+
+    offset_calc(inputdirectory, outputdirectory, do_plot)
 
     plt.show()
