@@ -41,25 +41,26 @@ def timelapse_calc(inputdirectory):
         try:
     # inputdirectory += "Ped_Rand1kHz_No1_IP90.dat"
 
-            times = []
-            events = []
+            times_with_events = {}
             capno = 1337
+
             for event in tqdm(
                     iterable=dragonboard.EventGenerator(filename),
                     desc=os.path.basename(filename),
                     leave=True,
                     unit=" events"):
                 # print(event.header.counter_133MHz / 133e6)
-                times.append(event.header.counter_133MHz / 133e6)
                 for pixelindex in range(dragonboard.io.num_channels):
                     for gaintype in dragonboard.io.gaintypes:
                         # print(event.header.stop_cells[gaintype][pixelindex])
                         stop_cell = event.header.stop_cells[gaintype][pixelindex]
                         if stop_cell <= capno <= (stop_cell + event.roi):
-                            # print(event)
-                            rolled_event = np.roll(event,(capno - stop_cell))
-                            events.append(rolled_event[0])
-                            print(rolled_event[0])
+                            print(event[pixelindex])
+                            # times.append(event.header.counter_133MHz / 133e6)
+                            # rolled_event = np.roll(event,(capno - stop_cell))                                   
+                            # events.append(rolled_event[0])
+                            # times_with_events[event.header.counter_133MHz / 133e6] = event[(capno - stop_cell)]
+                            # print(times_with_events)
 
                             # stats = calibration_constants[(pixelindex, gaintype)]
 
@@ -80,6 +81,9 @@ def timelapse_calc(inputdirectory):
             # plt.figure()
         except Exception as e:
             print(e)
+
+
+
     # calibration_constants = {}
     # for pixelindex in range(dragonboard.io.num_channels):
     #     for gaintype in dragonboard.io.gaintypes:
