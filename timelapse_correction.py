@@ -57,7 +57,7 @@ def timelapse_calc(inputdirectory):
                         stop_cell = event.header.stop_cells[gaintype][pixelindex]
                         if stop_cell <= capno <= (stop_cell + event.roi):
                             # print(event)
-                            rolled_event = np.roll(event,stop_cell)
+                            rolled_event = np.roll(event,(capno - stop_cell))
                             events.append(rolled_event[0])
                             print(rolled_event[0])
 
