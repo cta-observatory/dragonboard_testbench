@@ -30,3 +30,19 @@ def cell2sample(cell, stop_cell, roi, total_cells=4096):
 def sample2cell(sample, stop_cell, total_cells=4096):
     ''' Convert a sample id to the physical cell id for given stop_cell '''
     return (sample + stop_cell) % total_cells
+
+
+def cell_in_samples(cell, stop_cell, roi, total_cells=4096):
+    ''' Test if the hardware cell was read out for given stop_cell and roi '''
+
+    assert cell < total_cells
+
+    # cap directly in roi
+    if stop_cell <= cell < stop_cell + roi:
+        return True
+
+    # overlapping readout region
+    if cell < stop_cell + roi - total_cells:
+        return True
+
+    return False
