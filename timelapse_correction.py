@@ -39,38 +39,33 @@ def timelapse_calc(inputdirectory):
     glob_expression = os.path.join(inputdirectory, '*.dat')
     for filename in sorted(glob.glob(glob_expression)):
         try:
-    # inputdirectory += "Ped_Rand1kHz_No1_IP90.dat"
-
-            times_with_events = {}
+            # times_with_events = {}
             capno = 1337
+
+            time = []
+            adc_counts = []
+            timeerror = 0
+            adcerror = 0
 
             for event in tqdm(
                     iterable=dragonboard.EventGenerator(filename),
                     desc=os.path.basename(filename),
                     leave=True,
                     unit=" events"):
-                # print(event.header.counter_133MHz / 133e6)
-                for pixelindex in range(dragonboard.io.num_channels):
-                    for gaintype in dragonboard.io.gaintypes:
-                        # print(event.header.stop_cells[gaintype][pixelindex])
-                        stop_cell = event.header.stop_cells[gaintype][pixelindex]
-                        if stop_cell <= capno <= (stop_cell + event.roi):
-                            print(event[pixelindex])
-                            # times.append(event.header.counter_133MHz / 133e6)
-                            # rolled_event = np.roll(event,(capno - stop_cell))                                   
-                            # events.append(rolled_event[0])
-                            # times_with_events[event.header.counter_133MHz / 133e6] = event[(capno - stop_cell)]
-                            # print(times_with_events)
-
-                            # stats = calibration_constants[(pixelindex, gaintype)]
-
-                            # data = np.full(dragonboard.io.max_roi, np.nan)
-                            # stop_cell = event.header.stop_cells[gaintype][pixelindex]
-                            # data[:event.roi] = event.data[gaintype][pixelindex]
-
-                            # stats.add(np.roll(data, stop_cell))
-                
-
+                stop_cell = event.header.stop_cells["low"][0]
+                if stop_cell <= capno <= (stop_cell + event.roi):
+                        # times_with_events[event.header.counter_133MHz / 133e6] = event[2][0][0][capno - stop_cell]
+                    try:
+                        t = event.header.counter_133MHz / 133e6
+                    except:
+                        timeerror += 1
+                    try:
+                        adc = int(event[2][0][0][capno - stop_cell])
+                    except:
+                        adcerror += 1
+                    if isinstance( t, float ) and isinstance( adc, int ) == True:
+                            time.append(t)
+                            adc_counts.append(adc)
             # times = np.array(times)
             # delta_t_in_ms = np.diff(times)*1e3
             # print(delta_t_in_ms.mean())
@@ -82,35 +77,11 @@ def timelapse_calc(inputdirectory):
         except Exception as e:
             print(e)
 
+    print(timeerror)
+    print(adcerror)
 
-
-    # calibration_constants = {}
-    # for pixelindex in range(dragonboard.io.num_channels):
-    #     for gaintype in dragonboard.io.gaintypes:
-    #         calibration_constants[(pixelindex, gaintype)] = RunningStats(shape=dragonboard.io.max_roi)
-
-    # glob_expression = os.path.join(inputdirectory, '*.dat')
-    # for filename in sorted(glob.glob(glob_expression)):
-    #     try:
-    #         for event in tqdm(
-    #                 iterable=EventGenerator(filename),
-    #                 desc=os.path.basename(filename),
-    #                 leave=True,
-    #                 unit="events"):
-    #             for pixelindex in range(dragonboard.io.num_channels):
-    #                 for gaintype in dragonboard.io.gaintypes:
-    #                     stats = calibration_constants[(pixelindex, gaintype)]
-
-    #                     data = np.full(dragonboard.io.max_roi, np.nan)
-    #                     stop_cell = event.header.stop_cells[gaintype][pixelindex]
-    #                     data[:event.roi] = event.data[gaintype][pixelindex]
-
-    #                     stats.add(np.roll(data, stop_cell))
-    #     except Exception as e:
-    #         print(e)
-
-    # return calibration_constants
-
+    print(len(time))
+    print(len(adc_counts))
 
 if __name__ == '__main__':
     arguments = docopt(__doc__, version='Dragon Board Offset Calculation v.1.1')
@@ -119,6 +90,4 @@ if __name__ == '__main__':
         sys.exit("Error: no files found to perform time-lapse calculation")
 
     timelapse_calc(arguments["<inputdirectory>"])
-    # calibration_constants = offset_calc(arguments["<inputdirectory>"])
-    # pickle.dump(calibration_constants, open(arguments["--outpath"], 'wb'))
     plt.show()
