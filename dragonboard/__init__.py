@@ -18,13 +18,17 @@ def cell2sample(cell, stop_cell, roi, total_cells=4096):
     '''
     assert cell < total_cells
 
-    if stop_cell <= cell < stop_cell + roi:
-        return cell - stop_cell
+    if stop_cell + roi < total_cells:
+        if stop_cell <= cell < stop_cell + roi:
+            return cell - stop_cell
 
-    if cell < (stop_cell + roi) % total_cells:
-        return total_cells - stop_cell + cell
+    else:
+        if cell < (stop_cell + roi) % total_cells:
+            return total_cells - stop_cell + cell
 
-    raise ValueError('Physical capacitor not in data')
+    raise ValueError('Cell {} not in data for stop_cell = {}, roi = {}'.format(
+        cell, stop_cell, roi
+    ))
 
 
 def sample2cell(sample, stop_cell, total_cells=4096):
