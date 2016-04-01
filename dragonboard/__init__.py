@@ -1,6 +1,8 @@
-from .io import read, EventGenerator, Event
+from .io import read, EventGenerator, Event, max_roi
 from .plotting import DragonBrowser
 from .runningstats import RunningStats
+
+import numpy as np
 
 __all__ = [
     'read',
@@ -11,43 +13,25 @@ __all__ = [
 ]
 
 
-def cell2sample(cell, stop_cell, roi, total_cells=4096):
+def cell2sample(cell, stop_cell, total_cells=max_roi):
     '''
     Converts a hardware cell to the sample id for given stop_cell and roi
-    Raises a ValueError if the cell is not in the data samples
+
+    This makes no assumption about the roi, so if the returned value is >= roi,
+    the cell was not sampled
     '''
-    assert cell < total_cells
+    assert np.all(cell < total_cells)
 
-    if stop_cell + roi < total_cells:
-        if stop_cell <= cell < stop_cell + roi:
-            return cell - stop_cell
-
-    else:
-        if cell < (stop_cell + roi) % total_cells:
-            return total_cells - stop_cell + cell
-
-    raise ValueError('Cell {} not in data for stop_cell = {}, roi = {}'.format(
-        cell, stop_cell, roi
-    ))
+    return (cell - stop_cell) % total_cells
 
 
-def sample2cell(sample, stop_cell, total_cells=4096):
+def sample2cell(sample, stop_cell, total_cells=max_roi):
     ''' Convert a sample id to the physical cell id for given stop_cell '''
     return (sample + stop_cell) % total_cells
 
 
-def cell_in_samples(cell, stop_cell, roi, total_cells=4096):
+def cell_in_samples(cell, stop_cell, roi, total_cells=max_roi):
     ''' Test if the hardware cell was read out for given stop_cell and roi '''
+    assert np.all(cell < total_cells)
 
-    assert cell < total_cells
-
-    if stop_cell + roi < total_cells:
-        # cap directly in roi
-        if stop_cell <= cell < stop_cell + roi:
-            return True
-    else:
-        # overlapping readout region
-        if cell < (stop_cell + roi) % total_cells:
-            return True
-
-    return False
+    return cell2sample(cell, stop_cell, total_cells) < roi
