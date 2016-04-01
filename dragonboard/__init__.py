@@ -41,12 +41,13 @@ def cell_in_samples(cell, stop_cell, roi, total_cells=4096):
 
     assert cell < total_cells
 
-    # cap directly in roi
-    if stop_cell <= cell < stop_cell + roi:
-        return True
-
-    # overlapping readout region
-    if cell < stop_cell + roi - total_cells:
-        return True
+    if stop_cell + roi < total_cells:
+        # cap directly in roi
+        if stop_cell <= cell < stop_cell + roi:
+            return True
+    else:
+        # overlapping readout region
+        if cell < (stop_cell + roi) % total_cells:
+            return True
 
     return False
