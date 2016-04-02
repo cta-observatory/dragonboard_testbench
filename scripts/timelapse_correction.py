@@ -1,8 +1,8 @@
 """
-##################################################
-*          Dragon board readout software         *
-* calculate offset constants from pedestal files *
-##################################################
+#######################################################
+*          Dragon board readout software              *
+* calculate time-lapse dependence from pedestal files *
+#######################################################
 
 annotations:
 
@@ -34,7 +34,7 @@ import sys
 import pickle
 
 def timelapse_calc(inputdirectory):
-    """ calculate time lapse dependency for a given capacitor """
+    """ calculate time lapse dependence for a given capacitor """
 
     glob_expression = os.path.join(inputdirectory, '*.dat')
     for filename in sorted(glob.glob(glob_expression)):
@@ -45,8 +45,6 @@ def timelapse_calc(inputdirectory):
 
             time = []
             adc_counts = []
-            timeerror = 0
-            adcerror = 0
 
             for event in tqdm(
                     iterable=dragonboard.EventGenerator(filename),
@@ -55,27 +53,10 @@ def timelapse_calc(inputdirectory):
                     unit=" events"):
                 stop_cell = event.header.stop_cells[gaintype][pixelindex]
                 if stop_cell <= capno <= (stop_cell + event.roi)-1:
-                    try:
-                        t = event.header.counter_133MHz / 133e6
-                    except:
-                        timeerror += 1
-                    try:
-                        adc = int(event[2][pixelindex][gaintype][capno - stop_cell])
-                    except Exception as e:
-                        adcerror += 1
-                        print(e)
-                    if isinstance( t, float ) and isinstance( adc, int ) == True:
-                            time.append(t)
-                            adc_counts.append(adc)
-
+                    time.append(event.header.counter_133MHz / 133e6)
+                    adc_counts.append(int(event[2][pixelindex][gaintype][capno - stop_cell]))
         except Exception as e:
             print(e)
-
-    print(timeerror)
-    print(adcerror)
-
-    print(len(time))
-    print(len(adc_counts))
 
     delta_t_in_ms = np.diff(time)*1e3
 
@@ -86,7 +67,7 @@ def timelapse_calc(inputdirectory):
     plt.title("Time dependence: cap {} @ {} {} ({})".format(capno, pixelindex, gaintype, os.path.basename(filename)))
 
 if __name__ == '__main__':
-    arguments = docopt(__doc__, version='Dragon Board Offset Calculation v.1.1')
+    arguments = docopt(__doc__, version='Dragon Board Time-Dependent Offset Calculation v.1.0')
 
     if not glob.glob(os.path.join(arguments["<inputdirectory>"], '*.dat')):
         sys.exit("Error: no files found to perform time-lapse calculation")
