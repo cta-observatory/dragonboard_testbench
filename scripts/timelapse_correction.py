@@ -52,7 +52,7 @@ def timelapse_calc(inputdirectory):
                     leave=True,
                     unit=" events"):
                 stop_cell = event.header.stop_cells[gaintype][pixelindex]
-                if stop_cell <= capno <= (stop_cell + event.roi)-1:
+                if stop_cell <= capno < (stop_cell + event.roi):
                     time.append(event.header.counter_133MHz / 133e6)
                     adc_counts.append(int(event[2][pixelindex][gaintype][capno - stop_cell]))
         except Exception as e:
