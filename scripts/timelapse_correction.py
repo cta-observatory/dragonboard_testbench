@@ -43,7 +43,7 @@ def timelapse_calc(inputdirectory):
     glob_expression = os.path.join(inputdirectory, '*.dat')
     for filename in sorted(glob.glob(glob_expression)):
         try:
-            capno = 3000
+            cell_id = 2424
             gaintype = "low"
             pixelindex = 0
 
@@ -56,9 +56,9 @@ def timelapse_calc(inputdirectory):
                     leave=True,
                     unit=" events"):
                 stop_cell = event.header.stop_cells[gaintype][pixelindex]
-                if stop_cell <= capno < (stop_cell + event.roi):
+                if stop_cell <= cell_id < (stop_cell + event.roi):
                     time.append(event.header.counter_133MHz)
-                    adc_counts.append(int(event[2][pixelindex][gaintype][capno - stop_cell]))
+                    adc_counts.append(int(event[2][pixelindex][gaintype][cell_id - stop_cell]))
                     events.append(event[2][pixelindex][gaintype])
         except Exception as e:
             print(e)
@@ -67,15 +67,13 @@ def timelapse_calc(inputdirectory):
     parameters, covariance = curve_fit(f, delta_t_in_ms, adc_counts[1:], maxfev=10000, p0=[1,-0.25,200])
     x_plot = np.linspace(np.amin(delta_t_in_ms, axis=None, out=None, keepdims=False), np.amax(delta_t_in_ms, axis=None, out=None, keepdims=False))
     print(parameters)
-    # print(np.polyfit(np.log10(delta_t_in_ms), np.log10(adc_counts[1:]), 1))
 
     plt.scatter(delta_t_in_ms, adc_counts[1:])
     plt.plot(x_plot, f(x_plot, *parameters), "r-", label="Fit", linewidth=3)
-    # plt.plot(np.exp(coeffs[0])*np.exp(coeffs[1]*delta_t_in_ms), "r")
     plt.xlabel("time between consecutive events / ms")
     plt.ylabel("ADC counts")
     plt.xscale("log")
-    plt.title("Time dependence: cap {} @ {} {} ({})".format(capno, pixelindex, gaintype, os.path.basename(filename)))
+    plt.title("Time dependence: cap {} @ {} {} ({})".format(cell_id, pixelindex, gaintype, os.path.basename(filename)))
     plt.legend(loc="best")
 
 if __name__ == '__main__':
