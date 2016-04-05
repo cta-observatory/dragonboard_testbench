@@ -57,6 +57,15 @@ class AbstractEventGenerator(object):
 
         self.event_counter = 0
 
+        self.last_seen = np.full(
+            num_channels,
+            np.nan,
+            dtype=[
+                ("low", 'f4', max_roi),
+                ("high", 'f4', max_roi),
+            ]
+        )
+
     def __repr__(self):
         return(
             "{name}(\n"
@@ -135,6 +144,12 @@ class AbstractEventGenerator(object):
             raise ValueError('Already at first event')
         return self.next()
 
+    def _update_last_seen(self, event_header):
+        for g, p in stop_cell_map:
+            sc = event_header.stop_cells[g][p]
+            cells = (np.arange(self.roi) + sc) % max_roi
+            self.last_seen[g][p][cells] = event_header.timestamp
+
     def next(self):
         if self.event_counter >= self.max_events:
             raise StopIteration
@@ -142,6 +157,7 @@ class AbstractEventGenerator(object):
         event_header = self.read_header()
         data = self.read_adc_data()
 
+        self._update_last_seen(event_header)
         self.event_counter += 1
         return self.Event(event_header, self.roi, data)
 
