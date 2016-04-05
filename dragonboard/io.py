@@ -105,6 +105,21 @@ class AbstractEventGenerator(object):
     def calc_roi(self):
         raise NotImplementedError
 
+    def _read_stop_cells(self):
+        stop_cell_dtype = np.dtype('uint16').newbyteorder('>')
+        stop_cell_size = 8 * stop_cell_dtype.itemsize
+
+        stop_cells_for_user = np.empty(
+            num_channels, dtype=[('low', 'i2'), ('high', 'i2')]
+        )
+        stop_cells__in_drs4_chip_order = np.frombuffer(
+            self.file_descriptor.read(stop_cell_size), dtype=stop_cell_dtype)
+
+        for g, p in stop_cell_map:
+            chip = stop_cell_map[(g, p)]
+            stop_cells_for_user[g][p] = stop_cells__in_drs4_chip_order[chip]
+        return stop_cells_for_user
+
     def read_chunk(self):
         N = self.header_size + max_roi * adc_word_size * num_gains * num_channels
         return self.file_descriptor.read(int(N * 1.5))
@@ -193,15 +208,8 @@ class EventGenerator_v5_1_05(AbstractEventGenerator):
             clock,
             found_flag,
         ) = struct.unpack('!IIQ16s', f.read(struct.calcsize('!IIQ16s')))
-        stop_cells_for_user = np.empty(
-            num_channels, dtype=[('low', 'i2'), ('high', 'i2')]
-        )
-        stop_cells__in_drs4_chip_order = np.frombuffer(
-            f.read(stop_cell_size), dtype=stop_cell_dtype)
 
-        for g, p in stop_cell_map:
-            chip = stop_cell_map[(g, p)]
-            stop_cells_for_user[g][p] = stop_cells__in_drs4_chip_order[chip]
+        stop_cells_for_user = self._read_stop_cells()
 
         timestamp_in_s = clock * self.timestamp_conversion_to_s
 
@@ -289,15 +297,7 @@ class EventGenerator_v5_1_0B(AbstractEventGenerator):
         assert data_header_all_ds == 0xdddddddddddddddd, \
             "data_header is not 8x 0xdd but {!r}".format(data_header_all_ds)
 
-        stop_cells_for_user = np.empty(
-            num_channels, dtype=[('low', 'i2'), ('high', 'i2')]
-        )
-        stop_cells__in_drs4_chip_order = np.frombuffer(
-            f.read(stop_cell_size), dtype=stop_cell_dtype)
-
-        for g, p in stop_cell_map:
-            chip = stop_cell_map[(g, p)]
-            stop_cells_for_user[g][p] = stop_cells__in_drs4_chip_order[chip]
+        stop_cells_for_user = self._read_stop_cells()
 
         timestamp = counter_133MHz / 133e6
 
