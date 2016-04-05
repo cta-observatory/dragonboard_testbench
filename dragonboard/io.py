@@ -28,9 +28,6 @@ stop_cell_map = {
 
 max_roi = 4096
 gaintypes = ["low", "high"]
-stop_cell_dtype = np.dtype('uint16').newbyteorder('>')
-stop_cell_size = 8 * stop_cell_dtype.itemsize
-expected_relative_address_of_flag = 16
 num_channels = 8
 num_gains = 2
 adc_word_size = 2
