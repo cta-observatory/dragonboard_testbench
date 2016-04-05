@@ -1,4 +1,4 @@
-from .io import read, EventGenerator, Event
+from .io import read, EventGenerator
 from .plotting import DragonBrowser
 from .runningstats import RunningStats
 

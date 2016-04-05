@@ -26,8 +26,6 @@ stop_cell_map = {
     ("low", 7): 7,
 }
 
-Event = namedtuple('Event', ['header', 'roi', 'data'])
-
 max_roi = 4096
 gaintypes = ["low", "high"]
 stop_cell_dtype = np.dtype('uint16').newbyteorder('>')
@@ -45,6 +43,7 @@ def read(path, max_events=None):
 
 
 class AbstractEventGenerator(object):
+    Event = namedtuple('Event', ['header', 'roi', 'data'])
     header_size = None
 
     def __init__(self, path, max_events=None):
@@ -133,7 +132,7 @@ class AbstractEventGenerator(object):
         data = self.read_adc_data()
 
         self.event_counter += 1
-        return Event(event_header, self.roi, data)
+        return self.Event(event_header, self.roi, data)
 
 
     def read_adc_data(self):
