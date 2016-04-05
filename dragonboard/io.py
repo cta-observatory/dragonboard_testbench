@@ -31,7 +31,6 @@ gaintypes = ["low", "high"]
 stop_cell_dtype = np.dtype('uint16').newbyteorder('>')
 stop_cell_size = 8 * stop_cell_dtype.itemsize
 expected_relative_address_of_flag = 16
-timestamp_conversion_to_s = 7.5e-9
 num_channels = 8
 num_gains = 2
 adc_word_size = 2
@@ -164,6 +163,7 @@ class AbstractEventGenerator(object):
 
 class EventGenerator_v5_1_05(AbstractEventGenerator):
     header_size = 3 * 16
+    timestamp_conversion_to_s = 7.5e-9
 
     EventHeader = namedtuple('EventHeader', [
         'event_counter',
@@ -203,7 +203,7 @@ class EventGenerator_v5_1_05(AbstractEventGenerator):
             chip = stop_cell_map[(g, p)]
             stop_cells_for_user[g][p] = stop_cells__in_drs4_chip_order[chip]
 
-        timestamp_in_s = clock * timestamp_conversion_to_s
+        timestamp_in_s = clock * self.timestamp_conversion_to_s
 
         return self.EventHeader(
             event_id, trigger_id, timestamp_in_s, stop_cells_for_user, found_flag
