@@ -39,7 +39,8 @@ def read(path, max_events=None):
 
 
 class AbstractEventGenerator(object):
-    Event = namedtuple('Event', ['header', 'roi', 'data', 'time_since_last_readout'])
+    Event = namedtuple(
+        'Event', ['header', 'roi', 'data', 'time_since_last_readout'])
     header_size = None
 
     def __init__(self, path, max_events=None):
@@ -157,8 +158,10 @@ class AbstractEventGenerator(object):
         for g, p in stop_cell_map:
             sc = event_header.stop_cells[g][p]
 
-            time_since_last_readout[g][p] = np.roll(self.last_seen[g][p], -sc)[:self.roi]
-            time_since_last_readout[g][p] = event_header.timestamp - time_since_last_readout[g][p]
+            time_since_last_readout[g][p] = np.roll(
+                self.last_seen[g][p], -sc)[:self.roi]
+            time_since_last_readout[g][
+                p] = event_header.timestamp - time_since_last_readout[g][p]
 
             cells = (np.arange(self.roi) + sc) % max_roi
             self.last_seen[g][p][cells] = event_header.timestamp
