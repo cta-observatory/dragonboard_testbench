@@ -39,7 +39,7 @@ def read(path, max_events=None):
 
 
 class AbstractEventGenerator(object):
-    Event = namedtuple('Event', ['header', 'roi', 'data', 'since'])
+    Event = namedtuple('Event', ['header', 'roi', 'data', 'time_since_last_readout'])
     header_size = None
 
     def __init__(self, path, max_events=None):
@@ -145,7 +145,7 @@ class AbstractEventGenerator(object):
         return self.next()
 
     def _update_last_seen(self, event_header):
-        since = np.full(
+        time_since_last_readout = np.full(
             num_channels,
             np.nan,
             dtype=[
@@ -157,13 +157,13 @@ class AbstractEventGenerator(object):
         for g, p in stop_cell_map:
             sc = event_header.stop_cells[g][p]
 
-            since[g][p] = np.roll(self.last_seen[g][p], -sc)[:self.roi]
-            since[g][p] = event_header.timestamp - since[g][p]
+            time_since_last_readout[g][p] = np.roll(self.last_seen[g][p], -sc)[:self.roi]
+            time_since_last_readout[g][p] = event_header.timestamp - time_since_last_readout[g][p]
 
             cells = (np.arange(self.roi) + sc) % max_roi
             self.last_seen[g][p][cells] = event_header.timestamp
 
-        return since
+        return time_since_last_readout
 
     def next(self):
         if self.event_counter >= self.max_events:
@@ -172,9 +172,9 @@ class AbstractEventGenerator(object):
         event_header = self.read_header()
         data = self.read_adc_data()
 
-        since = self._update_last_seen(event_header)
+        time_since_last_readout = self._update_last_seen(event_header)
         self.event_counter += 1
-        return self.Event(event_header, self.roi, data, since)
+        return self.Event(event_header, self.roi, data, time_since_last_readout)
 
     def read_adc_data(self):
         ''' return array of raw ADC data, shape:(16, roi)
