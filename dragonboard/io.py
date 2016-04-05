@@ -257,6 +257,7 @@ class EventGenerator_v5_1_0B(AbstractEventGenerator):
         'counter_133MHz',
         'counter_10MHz',
         'pps_counter',
+        'timestamp',
         'stop_cells',
         'flag',
     ])
@@ -298,12 +299,15 @@ class EventGenerator_v5_1_0B(AbstractEventGenerator):
             chip = stop_cell_map[(g, p)]
             stop_cells_for_user[g][p] = stop_cells__in_drs4_chip_order[chip]
 
+        timestamp = counter_133MHz / 133e6
+
         return self.EventHeader(
             event_counter,
             trigger_counter,
             counter_133MHz,
             counter_10MHz,
             pps_counter,
+            timestamp,
             stop_cells_for_user,
             flags
         )
