@@ -84,14 +84,14 @@ class AbstractEventGenerator(object):
         num_events = filesize / self.event_size
         if not num_events.is_integer():
             warnings.warn(("\n"
-                "File:\n"
-                "{0}\n"
-                "might be broken.\n"
-                "Number of events "
-                "is not integer but {1:.2f}.").format(
-                    self.path,
-                    num_events
-                ))
+                           "File:\n"
+                           "{0}\n"
+                           "might be broken.\n"
+                           "Number of events "
+                           "is not integer but {1:.2f}.").format(
+                self.path,
+                num_events
+            ))
         return int(num_events)
 
     def __len__(self):
@@ -133,7 +133,6 @@ class AbstractEventGenerator(object):
 
         self.event_counter += 1
         return self.Event(event_header, self.roi, data)
-
 
     def read_adc_data(self):
         ''' return array of raw ADC data, shape:(16, roi)
@@ -212,7 +211,7 @@ class EventGenerator_v5_1_05(AbstractEventGenerator):
 
     def calc_roi(self):
         body_size = self.event_size - self.header_size
-        roi = body_size/(adc_word_size * num_gains * num_channels)
+        roi = body_size / (adc_word_size * num_gains * num_channels)
         assert roi.is_integer()
         return int(roi)
 
@@ -321,7 +320,7 @@ class EventGenerator_v5_1_0B(AbstractEventGenerator):
 
         chunk = self.read_chunk()
 
-        data_header = b'\xdd'*8
+        data_header = b'\xdd' * 8
         first_data_header = chunk.find(data_header)
         second_data_header = chunk.find(data_header, first_data_header + 1)
 
@@ -352,4 +351,5 @@ def guess_version(path):
             return version_name
         except:
             pass
-    raise IOError('File version could not be determined for file {}'.format(path))
+    raise IOError(
+        'File version could not be determined for file {}'.format(path))
