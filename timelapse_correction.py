@@ -1,8 +1,8 @@
 """
-##################################################
-*          Dragon board readout software         *
-* calculate offset constants from pedestal files *
-##################################################
+#######################################################
+*          Dragon board readout software              *
+* calculate time-lapse dependence from pedestal files *
+#######################################################
 
 annotations:
 
@@ -32,62 +32,60 @@ import os
 from docopt import docopt
 import sys
 import pickle
+from scipy.optimize import curve_fit
+
+def f(x, a, m, b):
+    return a*x**m + b
 
 def timelapse_calc(inputdirectory):
-    """ calculate time lapse dependency for a given capacitor """
+    """ calculate time lapse dependence for a given capacitor """
 
     glob_expression = os.path.join(inputdirectory, '*.dat')
     for filename in sorted(glob.glob(glob_expression)):
         try:
-            # times_with_events = {}
-            capno = 1337
+            cell_id = 2424
+            gaintype = "low"
+            pixelindex = 0
 
             time = []
             adc_counts = []
-            timeerror = 0
-            adcerror = 0
+            rel_pos_in_roi = []
 
             for event in tqdm(
                     iterable=dragonboard.EventGenerator(filename),
                     desc=os.path.basename(filename),
                     leave=True,
                     unit=" events"):
-                stop_cell = event.header.stop_cells["low"][0]
-                if stop_cell <= capno <= (stop_cell + event.roi):
-                        # times_with_events[event.header.counter_133MHz / 133e6] = event[2][0][0][capno - stop_cell]
-                    try:
-                        t = event.header.counter_133MHz / 133e6
-                    except:
-                        timeerror += 1
-                    try:
-                        adc = int(event[2][0][0][capno - stop_cell])
-                    except:
-                        adcerror += 1
-                    if isinstance( t, float ) and isinstance( adc, int ) == True:
-                            time.append(t)
-                            adc_counts.append(adc)
-            # times = np.array(times)
-            # delta_t_in_ms = np.diff(times)*1e3
-            # print(delta_t_in_ms.mean())
-
-            # plt.hist(delta_t_in_ms, bins=100, histtype="step")
-            # plt.xlabel("time between consecutive events / ms")
-            # plt.title(os.path.basename(filename))
-            # plt.figure()
+                stop_cell = event.header.stop_cells[gaintype][pixelindex]
+                if stop_cell <= cell_id < (stop_cell + event.roi):
+                    sample_id = cell_id - stop_cell
+                    if 0 < sample_id <= 40:
+                        time.append(event.header.counter_133MHz)
+                        adc_counts.append(int(event[2][pixelindex][gaintype][sample_id]))
+                        rel_pos_in_roi.append(100 / event.roi * sample_id)
         except Exception as e:
             print(e)
 
-    print(timeerror)
-    print(adcerror)
-
-    print(len(time))
-    print(len(adc_counts))
+    time_since_last_readout = np.diff(time) / 133e4
+    parameters, covariance = curve_fit(f, time_since_last_readout, adc_counts[1:], maxfev=10000, p0=[1,-1,1])
+    x_plot = np.linspace(np.amin(time_since_last_readout, axis=None, out=None, keepdims=False), np.amax(time_since_last_readout, axis=None, out=None, keepdims=False))
+    print(parameters)
+    
+    plot = plt.scatter(time_since_last_readout, adc_counts[1:], c=rel_pos_in_roi[1:], cmap="rainbow", vmin=0, vmax=100)
+    plt.plot(x_plot, f(x_plot, *parameters), "r-", label="Fit: f(x) = {} * x^{} + {}".format(round(parameters[0],2),round(parameters[1],2),round(parameters[2],2)), linewidth=3)
+    plt.xlabel("time between consecutive events / ms")
+    plt.ylabel("ADC counts")
+    plt.xscale("log")
+    plt.title("Time dependence: cell_id {} @ {} {} ({})\n".format(cell_id, pixelindex, gaintype, os.path.basename(filename)))
+    colorbar = plt.colorbar(plot)
+    colorbar.set_label("relative position of sample_id in roi / %")
+    plt.legend(loc="best")
 
 if __name__ == '__main__':
-    arguments = docopt(__doc__, version='Dragon Board Offset Calculation v.1.1')
+    arguments = docopt(__doc__, version='Dragon Board Time-Dependent Offset Calculation v.1.0')
 
     if not glob.glob(os.path.join(arguments["<inputdirectory>"], '*.dat')):
-        sys.exit("Error: no files found to perform time-lapse calculation")
+        sys.exit("Error: no file(s) found to perform time-lapse calculation")
 
     timelapse_calc(arguments["<inputdirectory>"])
     plt.show()
