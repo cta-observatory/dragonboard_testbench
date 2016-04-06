@@ -26,14 +26,8 @@ stop_cell_map = {
     ("low", 7): 7,
 }
 
-Event = namedtuple('Event', ['header', 'roi', 'data'])
-
 max_roi = 4096
 gaintypes = ["low", "high"]
-stop_cell_dtype = np.dtype('uint16').newbyteorder('>')
-stop_cell_size = 8 * stop_cell_dtype.itemsize
-expected_relative_address_of_flag = 16
-timestamp_conversion_to_s = 7.5e-9
 num_channels = 8
 num_gains = 2
 adc_word_size = 2
@@ -45,6 +39,8 @@ def read(path, max_events=None):
 
 
 class AbstractEventGenerator(object):
+    Event = namedtuple(
+        'Event', ['header', 'roi', 'data', 'time_since_last_readout'])
     header_size = None
 
     def __init__(self, path, max_events=None):
@@ -61,6 +57,16 @@ class AbstractEventGenerator(object):
             self.max_events = max_events
 
         self.event_counter = 0
+
+        self.last_seen = np.full(
+            num_channels,
+            np.nan,
+            dtype=[
+                ("low", 'f4', max_roi),
+                ("high", 'f4', max_roi),
+            ]
+        )
+        self._alarm_previous_was_called = False
 
     def __repr__(self):
         return(
@@ -85,14 +91,14 @@ class AbstractEventGenerator(object):
         num_events = filesize / self.event_size
         if not num_events.is_integer():
             warnings.warn(("\n"
-                "File:\n"
-                "{0}\n"
-                "might be broken.\n"
-                "Number of events "
-                "is not integer but {1:.2f}.").format(
-                    self.path,
-                    num_events
-                ))
+                           "File:\n"
+                           "{0}\n"
+                           "might be broken.\n"
+                           "Number of events "
+                           "is not integer but {1:.2f}.").format(
+                self.path,
+                num_events
+            ))
         return int(num_events)
 
     def __len__(self):
@@ -106,6 +112,21 @@ class AbstractEventGenerator(object):
 
     def calc_roi(self):
         raise NotImplementedError
+
+    def _read_stop_cells(self):
+        stop_cell_dtype = np.dtype('uint16').newbyteorder('>')
+        stop_cell_size = 8 * stop_cell_dtype.itemsize
+
+        stop_cells_for_user = np.empty(
+            num_channels, dtype=[('low', 'i2'), ('high', 'i2')]
+        )
+        stop_cells__in_drs4_chip_order = np.frombuffer(
+            self.file_descriptor.read(stop_cell_size), dtype=stop_cell_dtype)
+
+        for g, p in stop_cell_map:
+            chip = stop_cell_map[(g, p)]
+            stop_cells_for_user[g][p] = stop_cells__in_drs4_chip_order[chip]
+        return stop_cells_for_user
 
     def read_chunk(self):
         N = self.header_size + max_roi * adc_word_size * num_gains * num_channels
@@ -121,9 +142,35 @@ class AbstractEventGenerator(object):
         try:
             self.file_descriptor.seek(- 2 * self.event_size, 1)
             self.event_counter -= 2
+            self._alarm_previous_was_called = True
         except OSError:
             raise ValueError('Already at first event')
         return self.next()
+
+    def _update_last_seen(self, event_header):
+        time_since_last_readout = np.full(
+            num_channels,
+            np.nan,
+            dtype=[
+                ("low", 'f4', self.roi),
+                ("high", 'f4', self.roi),
+            ]
+        )
+        if self._alarm_previous_was_called:
+            return time_since_last_readout
+
+        for g, p in stop_cell_map:
+            sc = event_header.stop_cells[g][p]
+
+            time_since_last_readout[g][p] = np.roll(
+                self.last_seen[g][p], -sc)[:self.roi]
+            time_since_last_readout[g][
+                p] = event_header.timestamp - time_since_last_readout[g][p]
+
+            cells = (np.arange(self.roi) + sc) % max_roi
+            self.last_seen[g][p][cells] = event_header.timestamp
+
+        return time_since_last_readout
 
     def next(self):
         if self.event_counter >= self.max_events:
@@ -132,9 +179,9 @@ class AbstractEventGenerator(object):
         event_header = self.read_header()
         data = self.read_adc_data()
 
+        time_since_last_readout = self._update_last_seen(event_header)
         self.event_counter += 1
-        return Event(event_header, self.roi, data)
-
+        return self.Event(event_header, self.roi, data, time_since_last_readout)
 
     def read_adc_data(self):
         ''' return array of raw ADC data, shape:(16, roi)
@@ -166,6 +213,7 @@ class AbstractEventGenerator(object):
 
 class EventGenerator_v5_1_05(AbstractEventGenerator):
     header_size = 3 * 16
+    timestamp_conversion_to_s = 7.5e-9
 
     EventHeader = namedtuple('EventHeader', [
         'event_counter',
@@ -195,17 +243,10 @@ class EventGenerator_v5_1_05(AbstractEventGenerator):
             clock,
             found_flag,
         ) = struct.unpack('!IIQ16s', f.read(struct.calcsize('!IIQ16s')))
-        stop_cells_for_user = np.empty(
-            num_channels, dtype=[('low', 'i2'), ('high', 'i2')]
-        )
-        stop_cells__in_drs4_chip_order = np.frombuffer(
-            f.read(stop_cell_size), dtype=stop_cell_dtype)
 
-        for g, p in stop_cell_map:
-            chip = stop_cell_map[(g, p)]
-            stop_cells_for_user[g][p] = stop_cells__in_drs4_chip_order[chip]
+        stop_cells_for_user = self._read_stop_cells()
 
-        timestamp_in_s = clock * timestamp_conversion_to_s
+        timestamp_in_s = clock * self.timestamp_conversion_to_s
 
         return self.EventHeader(
             event_id, trigger_id, timestamp_in_s, stop_cells_for_user, found_flag
@@ -213,7 +254,7 @@ class EventGenerator_v5_1_05(AbstractEventGenerator):
 
     def calc_roi(self):
         body_size = self.event_size - self.header_size
-        roi = body_size/(adc_word_size * num_gains * num_channels)
+        roi = body_size / (adc_word_size * num_gains * num_channels)
         assert roi.is_integer()
         return int(roi)
 
@@ -259,6 +300,7 @@ class EventGenerator_v5_1_0B(AbstractEventGenerator):
         'counter_133MHz',
         'counter_10MHz',
         'pps_counter',
+        'timestamp',
         'stop_cells',
         'flag',
     ])
@@ -290,15 +332,9 @@ class EventGenerator_v5_1_0B(AbstractEventGenerator):
         assert data_header_all_ds == 0xdddddddddddddddd, \
             "data_header is not 8x 0xdd but {!r}".format(data_header_all_ds)
 
-        stop_cells_for_user = np.empty(
-            num_channels, dtype=[('low', 'i2'), ('high', 'i2')]
-        )
-        stop_cells__in_drs4_chip_order = np.frombuffer(
-            f.read(stop_cell_size), dtype=stop_cell_dtype)
+        stop_cells_for_user = self._read_stop_cells()
 
-        for g, p in stop_cell_map:
-            chip = stop_cell_map[(g, p)]
-            stop_cells_for_user[g][p] = stop_cells__in_drs4_chip_order[chip]
+        timestamp = counter_133MHz / 133e6
 
         return self.EventHeader(
             event_counter,
@@ -306,6 +342,7 @@ class EventGenerator_v5_1_0B(AbstractEventGenerator):
             counter_133MHz,
             counter_10MHz,
             pps_counter,
+            timestamp,
             stop_cells_for_user,
             flags
         )
@@ -322,7 +359,7 @@ class EventGenerator_v5_1_0B(AbstractEventGenerator):
 
         chunk = self.read_chunk()
 
-        data_header = b'\xdd'*8
+        data_header = b'\xdd' * 8
         first_data_header = chunk.find(data_header)
         second_data_header = chunk.find(data_header, first_data_header + 1)
 
@@ -353,4 +390,5 @@ def guess_version(path):
             return version_name
         except:
             pass
-    raise IOError('File version could not be determined for file {}'.format(path))
+    raise IOError(
+        'File version could not be determined for file {}'.format(path))

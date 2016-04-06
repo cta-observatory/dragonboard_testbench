@@ -1,4 +1,4 @@
-from .io import read, EventGenerator, Event, max_roi
+from .io import read, EventGenerator, max_roi
 from .plotting import DragonBrowser
 from .runningstats import RunningStats
 
