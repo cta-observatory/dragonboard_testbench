@@ -37,10 +37,6 @@ def write(store, data):
         )
 
 
-def kill():
-    os.system('kill {}'.format(os.getpid()))
-
-
 def extract_data(inputfiles):
     ''' calculate time lapse dependence for a given capacitor '''
 
@@ -65,7 +61,7 @@ def extract_data(inputfiles):
 
                         stop_cell = event.header.stop_cells[pixel][gain]
 
-                        delta_ts = event.since[pixel][gain]
+                        delta_ts = event.time_since_last_readout[pixel][gain]
                         valid = np.logical_not(np.isnan(delta_ts))
                         if not np.any(valid):
                             continue
