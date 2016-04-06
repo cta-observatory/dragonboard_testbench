@@ -66,6 +66,7 @@ class AbstractEventGenerator(object):
                 ("high", 'f4', max_roi),
             ]
         )
+        self._alarm_previous_was_called = False
 
     def __repr__(self):
         return(
@@ -141,6 +142,7 @@ class AbstractEventGenerator(object):
         try:
             self.file_descriptor.seek(- 2 * self.event_size, 1)
             self.event_counter -= 2
+            self._alarm_previous_was_called = True
         except OSError:
             raise ValueError('Already at first event')
         return self.next()
@@ -154,6 +156,8 @@ class AbstractEventGenerator(object):
                 ("high", 'f4', self.roi),
             ]
         )
+        if self._alarm_previous_was_called:
+            return time_since_last_readout
 
         for g, p in stop_cell_map:
             sc = event_header.stop_cells[g][p]
