@@ -1,13 +1,6 @@
 '''
-#######################################################
-*          Dragon board readout software              *
-* calculate time-lapse dependence from pedestal files *
-#######################################################
-
-annotations:
-
-- inputdirectory is the path to the directory of your pedestal files
-
+Save (cell, sample, time_since_last_readout, adc_counts) to an hdf5 file
+for all given inputfiles.
 
 Usage:
   offset_calculation.py <inputfiles> ... [options]
