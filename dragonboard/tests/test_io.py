@@ -26,3 +26,17 @@ def test_reading_v5_1_0B():
 
     event = next(eg)
     assert event.roi == 1024
+
+
+def test_performance_v5_1_05():
+    from ..io import read
+    events = read('data/random_noise_v5_1_05.dat')
+
+    assert len(events) == 100
+
+def test_performance_v5_1_0B():
+    from ..io import read
+    events = read('data/random_noise_v5_1_0B.dat')
+
+    assert len(events) == 100
+
