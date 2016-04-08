@@ -25,12 +25,18 @@ def f(x, a, b, c):
 def fit(df, cell, plot=False):
     df = df[(5 <= df['sample']) & (df['sample'] < 35)]
 
+    p0 = [
+        1.3,
+        -0.38,
+        df.adc_counts[df.delta_t > 0.05].mean(),
+    ]
+
     try:
         (a, b, c), cov = curve_fit(
             f,
             df['delta_t'],
             df['adc_counts'],
-            p0=[2,  -0.3, 230],
+            p0=p0,
         )
     except RuntimeError:
         logging.error('Could not fit cell {}'.format(cell))
