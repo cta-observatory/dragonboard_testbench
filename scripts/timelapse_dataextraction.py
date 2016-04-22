@@ -10,7 +10,7 @@ Usage:
 Options:
   -h --help     Show this screen.
   --version     Show version.
-  --outpath N   Outputfile path [default: calibration_constants.pickle]
+  --outpath N   Outputfile path [default: data.hdf5]
 
 '''
 
@@ -37,10 +37,10 @@ def write(store, data):
         )
 
 
-def extract_data(inputfiles):
+def extract_data(inputfiles, outpath):
     ''' calculate time lapse dependence for a given capacitor '''
 
-    with pd.HDFStore('data.hdf5', mode='w', comp_level=5, comp_lib='blosc') as store:
+    with pd.HDFStore(outpath, mode='w', comp_level=5, comp_lib='blosc') as store:
 
         sample_ids = None
         for filename in sorted(inputfiles):
@@ -85,4 +85,4 @@ if __name__ == '__main__':
     arguments = docopt(
         __doc__, version='Dragon Board Time-Dependent Offset Calculation v.1.0'
     )
-    extract_data(arguments['<inputfiles>'])
+    extract_data(arguments['<inputfiles>'], outpath=arguments['--outpath'])
