@@ -22,55 +22,6 @@ x = np.logspace(-4, 0, 250)
 def f(x, a, b, c):
     return a * x ** b + c
 
-def fit(df, cell, plot=False):
-    df = df[(5 <= df['sample']) & (df['sample'] < 35)]
-
-    p0 = [
-        1.3,
-        -0.38,
-        df.adc_counts[df.delta_t > 0.05].mean(),
-    ]
-
-    try:
-        (a, b, c), cov = curve_fit(
-            f,
-            df['delta_t'],
-            df['adc_counts'],
-            p0=p0,
-        )
-    except RuntimeError:
-        logging.error('Could not fit cell {}'.format(cell))
-        return np.full(4, np.nan)
-
-
-    ndf = len(df.index) - 3
-    residuals = df['adc_counts'] - f(df['delta_t'], a, b, c)
-    chisquare = np.sum(residuals**2) / ndf
-
-    if plot:
-        global fig, ax, x
-
-        if fig is None:
-            fig = plt.figure()
-            ax = fig.add_subplot(1, 1, 1)
-            fig.tight_layout()
-
-        ax.cla()
-        ax.set_title("cell:"+str(cell)+" chi2:"+str(chisquare))
-        ax.set_xscale('log')
-        ax.set_xlim(1e-4, 1)
-        ax.scatter(
-            x='delta_t', y='adc_counts', c='sample',
-            cmap='rainbow', linewidth=0, s=4,
-            data=df,
-        )
-        ax.plot(x, f(x, a, b, c))
-
-        fig.canvas.draw()
-        plt.pause(1e-9)
-
-
-    return a, b, c, chisquare
 
 def test(df, cell, fit_results):
     df = df[df["sample"] < 38]
@@ -103,7 +54,6 @@ if __name__ == '__main__':
             for gain in ["low", "high"]:
 
                 data = pd.read_hdf(args['<inputfile>'], 'pixel_{}_{}'.format(pixel, gain))
-                
 
                 by_cell = data.groupby('cell')
 
@@ -115,4 +65,7 @@ if __name__ == '__main__':
                         columns=['mean', 'std', 'N']
                     )
 
-                result.to_hdf('test_results_in{}_calib{}.hdf5'.format(input_number, calib_number), '{}/{}'.format(pixel, gain))
+                result.to_hdf(
+                    'test_results_in{}_calib{}.hdf5'.format(input_number, calib_number),
+                    '{}/{}'.format(pixel, gain)
+                )
