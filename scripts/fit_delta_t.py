@@ -1,6 +1,6 @@
 '''
 Usage:
-    fit_delta_t.py <inputfile> <pixel> <gain> [options]
+    fit_delta_t.py <inputfile> [options]
 
 Options:
     -p, --plot              Show plots while fitting
@@ -13,6 +13,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 import logging
 from docopt import docopt
+
+logging.basicConfig(level=logging.INFO)
 
 fig = None
 x = np.logspace(-4, 0, 250)
@@ -76,16 +78,26 @@ if __name__ == '__main__':
     plt.rcParams['figure.figsize'] = (4, 3)
     plt.ion()
 
-    pixel = args['<pixel>']
-    gain = args['<gain>']
+    pool = Parallel(int(args['--n-jobs']), verbose=5)
+    ids = np.arange(4096)
 
-    data = pd.read_hdf(args['<inputfile>'], 'pixel_{}_{}'.format(pixel, gain))
-    by_cell = data.groupby('cell')
+    with pd.HDFStore('calib_constants.hdf', 'w') as store:
+        for pixel in range(8):
+            for channel in ('low', 'high'):
+                logging.info('%s  %s', pixel, channel)
+                data = pd.read_hdf(
+                    args['<inputfile>'],
+                    'pixel_{}_{}'.format(pixel, channel)
+                )
 
-    with Parallel(int(args['--n-jobs']), verbose=5) as pool:
-        result = pd.DataFrame(
-            pool(delayed(fit)(df, name, plot=args['--plot']) for name, df in by_cell),
-            columns=['a', 'b', 'c', 'chisq_ndf']
-        )
+                by_cell = data.groupby('cell')
+                result = pd.DataFrame(pool(delayed(fit)(
+                    df, name, plot=args['--plot']) for name, df in by_cell
+                    ),
+                    columns=['a', 'b', 'c', 'chisq_ndf']
+                )
+                result['pixel'] = pixel
+                result['channel'] = channel
+                result['cell'] = ids
 
-    result.to_hdf('fit_results_{}_{}.hdf5'.format(pixel, gain), 'fit_result')
+                store.append('data', result, min_itemsize={'channel': 4})
