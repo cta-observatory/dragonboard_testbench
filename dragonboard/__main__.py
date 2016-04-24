@@ -1,6 +1,9 @@
 '''
 Usage:
-    dragonviewer [<inputfile>]
+    dragonviewer [<inputfile>] [options]
+
+Options:
+    -c <calibfile>   File containing the calibration constants
 '''
 import matplotlib
 import matplotlib.style
@@ -28,7 +31,7 @@ def main():
     qApp = QtGui.QApplication(sys.argv)
     signal.signal(signal.SIGINT, sigint_handler)
 
-    widget = DragonBrowser(args['<inputfile>'])
+    widget = DragonBrowser(args['<inputfile>'], args['-c'])
     widget.show()
 
     # let the QApplication process signals from the python thread
