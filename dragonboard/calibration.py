@@ -1,5 +1,6 @@
 import numpy as np
 import pandas as pd
+from copy import deepcopy
 
 from .utils import sample2cell
 
@@ -22,6 +23,8 @@ class TimelapseCalibration:
 
     def __call__(self, event):
         ''' calibrate data in event '''
+        event = deepcopy(event)
+
         if self.roi is None:
             self.roi = event.roi
             self.sample = np.arange(event.roi)
