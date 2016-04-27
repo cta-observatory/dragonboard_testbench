@@ -43,7 +43,7 @@ def timelapse_calc(inputdirectory):
     glob_expression = os.path.join(inputdirectory, '*.dat')
     for filename in sorted(glob.glob(glob_expression)):
         try:
-            cell_id = 2424
+            cell_id = 2399
             gaintype = "low"
             pixelindex = 0
 
