@@ -40,7 +40,7 @@ def fit(df, name):
         )
     except RuntimeError:
         logging.error('Could not fit cell {0}, sample {1}'.format(cell, sample))
-        return np.full(4, np.nan)
+        return cell, sample, np.nan, np.nan, np.nan, np.nan
 
     ndf = len(df.index) - 3
     residuals = df['adc_counts'] - f(df['delta_t'], a, b, c)
