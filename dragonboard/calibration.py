@@ -4,13 +4,16 @@ from copy import deepcopy
 
 from .utils import sample2cell
 
+def read_calib_constants(filepath):
+    return pd.read_hdf(filepath).set_index(
+            ['pixel', 'channel', 'cell']
+        ).sort_index()
+
 
 class TimelapseCalibration:
 
     def __init__(self, filename):
-        self.calib_constants = pd.read_hdf(filename).set_index(
-            ['pixel', 'channel', 'cell']
-        ).sort_index()
+        self.calib_constants = read_calib_constants(filename)
         self.roi = None
         self.sample = None
 
