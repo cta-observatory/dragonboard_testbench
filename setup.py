@@ -8,6 +8,15 @@ setup(
     author='Kai Brügge, Mario Hörbe, Dominik Neise, Maximilian Nöthe',
     author_email='kai.bruegge@tu-dortmund.de',
     license='MIT',
+    install_requires=[
+        'numpy',
+        'matplotlib',
+        'scipy',
+        'pandas',
+        'tqdm',
+        'joblib',
+        'PyQt4',
+    ],
     packages=['dragonboard'],
     entry_points={
         'gui_scripts': [
