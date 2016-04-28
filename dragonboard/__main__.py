@@ -4,6 +4,7 @@ Usage:
 
 Options:
     -c <calibfile>   File containing the calibration constants
+    --start=<N>      First event to show
 '''
 import matplotlib
 import matplotlib.style
@@ -31,7 +32,11 @@ def main():
     qApp = QtGui.QApplication(sys.argv)
     signal.signal(signal.SIGINT, sigint_handler)
 
-    widget = DragonBrowser(args['<inputfile>'], args['-c'])
+    widget = DragonBrowser(
+        args['<inputfile>'],
+        args['-c'],
+        int(args['--start']) if args['--start'] else None,
+    )
     widget.show()
 
     # let the QApplication process signals from the python thread

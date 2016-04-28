@@ -39,7 +39,7 @@ class FigureCanvas(FigureCanvasQTAgg):
 
 
 class DragonBrowser(QtGui.QMainWindow):
-    def __init__(self, filename=None, calibfile=None, **kwargs):
+    def __init__(self, filename=None, calibfile=None, start=None, **kwargs):
         QtGui.QMainWindow.__init__(self, **kwargs)
 
         self.setWindowTitle('DragonBrowser')
@@ -56,6 +56,11 @@ class DragonBrowser(QtGui.QMainWindow):
             self.calib = lambda x: x
 
         self.generator = EventGenerator(self.filename)
+
+        if start is not None:
+            for i in range(start):
+                next(self.generator)
+
         self.dragon_event = self.calib(next(self.generator))
         self.gains = self.dragon_event.data.dtype.names
         self.n_channels = self.dragon_event.data.shape[0]
