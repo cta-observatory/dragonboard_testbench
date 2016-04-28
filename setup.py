@@ -15,7 +15,6 @@ setup(
         'pandas',
         'tqdm',
         'joblib',
-        'PyQt4',
     ],
     packages=['dragonboard'],
     entry_points={
