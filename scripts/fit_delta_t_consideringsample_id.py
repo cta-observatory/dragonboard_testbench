@@ -23,17 +23,13 @@ def f(x, a, b, c):
 
 
 def fit(df, name):
-# def fit(df, cell, plot=False):
-    # df = df[(5 <= df['sample']) & (df['sample'] < 35)]
-
     p0 = [
         1.3,
         -0.38,
         df.adc_counts[df.delta_t > 0.05].mean(),
     ]
 
-    cell = name[0]
-    sample= name[1]
+    cell, sample = name
 
     try:
         (a, b, c), cov = curve_fit(
@@ -50,14 +46,13 @@ def fit(df, name):
     residuals = df['adc_counts'] - f(df['delta_t'], a, b, c)
     chisquare = np.sum(residuals**2) / ndf
 
-    return a, b, c, chisquare
+    return cell, sample, a, b, c, chisquare
 
 
 if __name__ == '__main__':
     args = docopt(__doc__)
 
     pool = Parallel(int(args['--n-jobs']), verbose=int(args['--verbosity']))
-    # ids = np.arange(4096)
     ids = np.arange(10)
     sample_ids = np.arange(40)
 
@@ -67,28 +62,22 @@ if __name__ == '__main__':
             sys.exit()
 
     with pd.HDFStore(args['<outputfile>'], 'w') as store:
-        for pixel in [1]:
-        # or pixel in range(8):
-            # for channel in ('low', 'high'):
-            for channel in ('low',):
+        for pixel in range(1):
+            for channel in ('low', ):
                 logging.info('%s  %s', pixel, channel)
                 data = pd.read_hdf(
                     args['<inputfile>'],
                     'pixel_{}_{}'.format(pixel, channel)
                 )
-                #####
+
                 data = data[data.cell < 10]
 
-                by_cellandsample = data.groupby(['cell','sample'])
-                print np.shape(by_cellandsample)
+                by_cellandsample = data.groupby(['cell', 'sample'])
                 result = pd.DataFrame(
-                    # pool(delayed(fit)(df, name) for name, df in by_cellandsample[:,:20]),
                     pool(delayed(fit)(df, name) for name, df in by_cellandsample),
-                    columns=['a', 'b', 'c', 'chisq_ndf']
+                    columns=['cell', 'sample', 'a', 'b', 'c', 'chisq_ndf']
                 )
                 result['pixel'] = pixel
                 result['channel'] = channel
-                result['cell'] = ids
-                result['sample'] = sample_ids
 
                 store.append('data', result, min_itemsize={'channel': 4})
