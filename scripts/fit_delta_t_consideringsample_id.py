@@ -62,15 +62,13 @@ if __name__ == '__main__':
             sys.exit()
 
     with pd.HDFStore(args['<outputfile>'], 'w') as store:
-        for pixel in range(1):
-            for channel in ('low', ):
+        for pixel in range(8):
+            for channel in ('low', 'high'):
                 logging.info('%s  %s', pixel, channel)
                 data = pd.read_hdf(
                     args['<inputfile>'],
                     'pixel_{}_{}'.format(pixel, channel)
                 )
-
-                data = data[data.cell < 10]
 
                 by_cellandsample = data.groupby(['cell', 'sample'])
                 result = pd.DataFrame(
