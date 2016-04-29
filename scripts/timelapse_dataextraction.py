@@ -11,6 +11,7 @@ Options:
   -h --help     Show this screen.
   --version     Show version.
   --outpath N   Outputfile path [default: data.hdf5]
+  -c --calib P  Path to calibration file
 
 '''
 
@@ -21,7 +22,7 @@ from docopt import docopt
 import pandas as pd
 from collections import defaultdict
 import numpy as np
-
+from dragonboard.calibration import TimelapseCalibration
 
 def write(store, data):
     for (pixel, gain), value in data.items():
@@ -37,8 +38,12 @@ def write(store, data):
         )
 
 
-def extract_data(inputfiles, outpath):
+def extract_data(inputfiles, outpath, calibpath=None):
     ''' calculate time lapse dependence for a given capacitor '''
+    if not calibpath is None:
+        calib = TimelapseCalibration(calibpath)
+    else:
+        calib = lambda x: x
 
     with pd.HDFStore(outpath, mode='w', comp_level=5, comp_lib='blosc') as store:
 
@@ -52,6 +57,8 @@ def extract_data(inputfiles, outpath):
                     leave=True,
                     unit=' events',
                     ):
+
+                event = calib(event)
 
                 if sample_ids is None or sample_ids.shape != event.roi:
                     sample_ids = np.arange(event.roi)
@@ -85,4 +92,8 @@ if __name__ == '__main__':
     arguments = docopt(
         __doc__, version='Dragon Board Time-Dependent Offset Calculation v.1.0'
     )
-    extract_data(arguments['<inputfiles>'], outpath=arguments['--outpath'])
+    if os.path.isfile(arguments["--calib"]):
+        extract_data(arguments['<inputfiles>'], outpath=arguments['--outpath'], calibpath=arguments["--calib"])
+    else:
+        extract_data(arguments['<inputfiles>'], outpath=arguments['--outpath'])
+
