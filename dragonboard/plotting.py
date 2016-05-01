@@ -11,7 +11,7 @@ import os
 import sys
 
 from .io import EventGenerator
-from .calibration import TimelapseCalibration
+from .calibration import TimelapseCalibration, TimelapseCalibrationExtraOffsets
 
 color_converter = ColorConverter()
 
@@ -39,7 +39,7 @@ class FigureCanvas(FigureCanvasQTAgg):
 
 
 class DragonBrowser(QtGui.QMainWindow):
-    def __init__(self, filename=None, calibfile=None, start=None, **kwargs):
+    def __init__(self, filename=None, calibfile=None, extra_offset_file=None, start=None, **kwargs):
         QtGui.QMainWindow.__init__(self, **kwargs)
 
         self.setWindowTitle('DragonBrowser')
@@ -50,7 +50,9 @@ class DragonBrowser(QtGui.QMainWindow):
         if not self.filename:
             sys.exit()
 
-        if calibfile is not None:
+        if extra_offset_file is not None:
+            self.calib = TimelapseCalibrationExtraOffsets(calibfile, extra_offset_file)
+        elif calibfile is not None:
             self.calib = TimelapseCalibration(calibfile)
         else:
             self.calib = lambda x: x

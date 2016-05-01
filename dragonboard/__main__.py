@@ -4,6 +4,7 @@ Usage:
 
 Options:
     -c <calibfile>   File containing the calibration constants
+    -e <extrafile>   File containing the extra offset constants
     --start=<N>      First event to show
 '''
 import matplotlib
@@ -35,6 +36,7 @@ def main():
     widget = DragonBrowser(
         args['<inputfile>'],
         args['-c'],
+        args['-e'],
         int(args['--start']) if args['--start'] else None,
     )
     widget.show()
