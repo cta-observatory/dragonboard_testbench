@@ -11,7 +11,6 @@ Options:
 '''
 from dragonboard import EventGenerator
 from dragonboard.calibration import TimelapseCalibration
-from collections import defaultdict
 from joblib import Parallel, delayed
 import numpy as np
 import pandas as pd
@@ -49,9 +48,6 @@ if __name__ == '__main__':
         max_events=int(args['-m']) if args['-m'] else None,
     )
 
-    data_uncalibrated = defaultdict(list)
-    data_calibrated = defaultdict(list)
-
     with Parallel(int(args['-n']), verbose=int(args['-v'])) as pool:
 
         data = pd.DataFrame(
@@ -74,4 +70,4 @@ if __name__ == '__main__':
     fig.tight_layout()
     plt.show()
 
-    data.to_hdf(args['<outputfile>'])
+    data.to_hdf(args['<outputfile>'], 'data')
