@@ -4,6 +4,7 @@ from copy import deepcopy
 
 from .utils import sample2cell
 
+
 def read_calib_constants(filepath):
     return pd.read_hdf(filepath).set_index(
             ['pixel', 'channel', 'cell']
@@ -19,7 +20,9 @@ class TimelapseCalibration:
 
     def offset(self, delta_t, a, b, c):
         o = a * delta_t ** b + c
-        o[np.isnan(o)] = c
+        mask = np.isnan(o)
+        o[mask] = c[mask]
+
         o[np.isnan(o)] = 0
 
         return o
@@ -39,11 +42,12 @@ class TimelapseCalibration:
                 sc = event.header.stop_cells[pixel][channel]
                 cells = sample2cell(self.sample, sc)
 
+                a, b, c = self.calib_constants.loc[pixel, channel].loc[cells].values.T
                 dt = event.time_since_last_readout[pixel][channel]
-                c = self.calib_constants.loc[pixel, channel].loc[cells]
-                event.data[pixel][channel] -= self.offset(dt, c['a'], c['b'], c['c']).astype('>i2')
+                event.data[pixel][channel] -= self.offset(dt, a, b, c).astype('>i2')
 
         return event
+
 
 def read_offsets(offsets_file):
     offsets = np.zeros(
@@ -96,10 +100,10 @@ class TimelapseCalibrationExtraOffsets:
                 cells = sample2cell(self.sample, sc)
 
                 dt = event.time_since_last_readout[pixel][gain]
-                c = self.calib_constants.loc[pixel, gain].loc[cells]
-                delta_t_offset = self.offset(dt, c['a'], c['b']).astype('>i2')
+                a, b = self.calib_constants.loc[pixel, gain].loc[cells].values.T
+                delta_t_offset = self.offset(dt, a, b).astype('>i2')
                 extra_offset = self.offsets[pixel, gain_id, cells, self.sample].astype('>i2')
-                event.data[pixel][gain] -= delta_t_offset + extra_offset
+                event.data[pixel][gain] -= delta_t_offset + extra_offset.values
 
         return event
 
