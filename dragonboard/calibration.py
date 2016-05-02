@@ -5,6 +5,11 @@ from copy import deepcopy
 from .utils import sample2cell
 
 
+class NoCalibration:
+    def __call__(self, event):
+        return event
+
+
 def read_calib_constants(filepath):
     return pd.read_hdf(filepath).drop('chisq_ndf', axis=1).set_index(
             ['pixel', 'channel', 'cell']
