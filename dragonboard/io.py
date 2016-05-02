@@ -32,6 +32,10 @@ num_channels = 8
 num_gains = 2
 adc_word_size = 2
 
+Event = namedtuple(
+    'Event', ['header', 'roi', 'data', 'time_since_last_readout']
+)
+
 
 def read(path, max_events=None):
     ''' return list of Events in file path '''
@@ -39,9 +43,8 @@ def read(path, max_events=None):
 
 
 class AbstractEventGenerator(object):
-    Event = namedtuple(
-        'Event', ['header', 'roi', 'data', 'time_since_last_readout'])
     header_size = None
+    Event = Event
 
     def __init__(self, path, max_events=None):
         self.path = os.path.realpath(path)
@@ -211,17 +214,19 @@ class AbstractEventGenerator(object):
         return array
 
 
+EventHeader_v5_1_05 = namedtuple('EventHeader_v5_1_05', [
+    'event_counter',
+    'trigger_counter',
+    'timestamp',
+    'stop_cells',
+    'flag',
+])
+
+
 class EventGenerator_v5_1_05(AbstractEventGenerator):
     header_size = 3 * 16
     timestamp_conversion_to_s = 7.5e-9
-
-    EventHeader = namedtuple('EventHeader', [
-        'event_counter',
-        'trigger_counter',
-        'timestamp',
-        'stop_cells',
-        'flag',
-    ])
+    EventHeader = EventHeader_v5_1_05
 
     def read_header(self):
         ''' return EventHeader from file f
@@ -291,19 +296,22 @@ class EventGenerator_v5_1_05(AbstractEventGenerator):
         return event_size
 
 
+EventHeader_v5_1_0B = namedtuple('EventHeader_v5_1_0B', [
+    'event_counter',
+    'trigger_counter',
+    'counter_133MHz',
+    'counter_10MHz',
+    'pps_counter',
+    'timestamp',
+    'stop_cells',
+    'flag',
+])
+
+
 class EventGenerator_v5_1_0B(AbstractEventGenerator):
     header_size = 4 * 16
+    EventHeader = EventHeader_v5_1_0B
 
-    EventHeader = namedtuple('EventHeader', [
-        'event_counter',
-        'trigger_counter',
-        'counter_133MHz',
-        'counter_10MHz',
-        'pps_counter',
-        'timestamp',
-        'stop_cells',
-        'flag',
-    ])
 
     def calc_roi(self):
         body_size = self.event_size - self.header_size
