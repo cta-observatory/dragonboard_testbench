@@ -43,10 +43,10 @@ if __name__ == '__main__':
     pixel = int(args['-p'])
     channel = args['-c']
 
-    calib = TimelapseCalibration('./calibration_constants.hdf5')
+    calib = TimelapseCalibration('./calib_constants.hdf5')
     events = EventGenerator(
         args['<inputfile>'],
-        max_events=int(args['-m']) if args['-n'] else None,
+        max_events=int(args['-m']) if args['-m'] else None,
     )
 
     data_uncalibrated = defaultdict(list)
