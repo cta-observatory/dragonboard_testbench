@@ -102,3 +102,41 @@ class TimelapseCalibrationExtraOffsets:
                 event.data[pixel][gain] -= delta_t_offset + extra_offset
 
         return event
+
+
+class MedianTimelapseExtraOffsets:
+
+    def __init__(self, offsets_file, a=1.4599324285222228, b=-0.37503250093991702):
+        self.offsets = read_offsets(offsets_file)
+        self.roi = None
+        self.sample = None
+        self.a = a
+        self.b = b
+
+    def offset(self, delta_t):
+        o = self.a * delta_t ** self.b
+        o[np.isnan(o)] = 0
+        return o
+
+    def __call__(self, event):
+        ''' calibrate data in event '''
+        event = deepcopy(event)
+
+        if self.roi is None:
+            self.roi = event.roi
+            self.sample = np.arange(event.roi)
+
+        assert self.roi == event.roi
+
+        for pixel in range(len(event.data)):
+            for gain in event.data.dtype.names:
+                gain_id = {'high':0, 'low':1}[gain]
+                sc = event.header.stop_cells[pixel][gain]
+                cells = sample2cell(self.sample, sc)
+
+                dt = event.time_since_last_readout[pixel][gain]
+                delta_t_offset = self.offset(dt).astype('>i2')
+                extra_offset = self.offsets[pixel, gain_id, cells, self.sample].astype('>i2')
+                event.data[pixel][gain] -= delta_t_offset + extra_offset
+
+        return event
