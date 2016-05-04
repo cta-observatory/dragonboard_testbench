@@ -11,6 +11,7 @@ import os
 import sys
 
 from .io import EventGenerator
+from .calibration import TimelapseCalibration, TimelapseCalibrationExtraOffsets
 
 color_converter = ColorConverter()
 
@@ -38,7 +39,7 @@ class FigureCanvas(FigureCanvasQTAgg):
 
 
 class DragonBrowser(QtGui.QMainWindow):
-    def __init__(self, filename=None, **kwargs):
+    def __init__(self, filename=None, calibfile=None, extra_offset_file=None, start=None, **kwargs):
         QtGui.QMainWindow.__init__(self, **kwargs)
 
         self.setWindowTitle('DragonBrowser')
@@ -48,8 +49,21 @@ class DragonBrowser(QtGui.QMainWindow):
             )
         if not self.filename:
             sys.exit()
+
+        if extra_offset_file is not None:
+            self.calib = TimelapseCalibrationExtraOffsets(calibfile, extra_offset_file)
+        elif calibfile is not None:
+            self.calib = TimelapseCalibration(calibfile)
+        else:
+            self.calib = lambda x: x
+
         self.generator = EventGenerator(self.filename)
-        self.dragon_event = next(self.generator)
+
+        if start is not None:
+            for i in range(start):
+                next(self.generator)
+
+        self.dragon_event = self.calib(next(self.generator))
         self.gains = self.dragon_event.data.dtype.names
         self.n_channels = self.dragon_event.data.shape[0]
         self.init_gui()
@@ -63,6 +77,7 @@ class DragonBrowser(QtGui.QMainWindow):
         self.axs['low'] = self.fig.add_subplot(2, 1, 1, sharex=self.axs['high'])
         self.axs['low'].set_title('Low Gain Channel')
         self.axs['high'].set_title('High Gain Channel')
+        self.axs['high'].set_xlim(-0.5, self.dragon_event.roi)
 
         self.navbar = NavigationToolbar(self.canvas, self)
         self.toolbar = self.addToolBar('Test')
@@ -79,7 +94,7 @@ class DragonBrowser(QtGui.QMainWindow):
         for channel in range(self.n_channels):
             for gain in self.gains:
                 plot, = self.axs[gain].plot(
-                    [], [], label='Ch{}'.format(channel)
+                    [], [], '_', ms=10, mew=1, label='Ch{}'.format(channel)
                 )
                 plot.set_visible(False)
                 self.plots[gain][channel] = plot
@@ -109,17 +124,11 @@ class DragonBrowser(QtGui.QMainWindow):
         layout.addWidget(cb)
         self.rescale_box = cb
 
-        cb = QtGui.QCheckBox('Physical Cell', bottom_frame)
+        cb = QtGui.QCheckBox('Show Cell ID', bottom_frame)
         cb.setFocusPolicy(QtCore.Qt.NoFocus)
         cb.stateChanged.connect(self.update)
         layout.addWidget(cb)
         self.cb_physical = cb
-
-        button = QtGui.QPushButton(bottom_frame)
-        button.clicked.connect(self.previous_event)
-        button.setFocusPolicy(QtCore.Qt.NoFocus)
-        button.setText('Previous Event')
-        layout.addWidget(button)
 
         button = QtGui.QPushButton(bottom_frame)
         button.clicked.connect(self.next_event)
@@ -152,10 +161,6 @@ class DragonBrowser(QtGui.QMainWindow):
 
     def update(self):
         event = self.dragon_event
-        if self.cb_physical.isChecked():
-            self.axs['high'].set_xlabel('Physical Cell')
-        else:
-            self.axs['high'].set_xlabel('Time Slice')
 
         for gain in self.gains:
             for channel in range(event.data.shape[0]):
@@ -171,6 +176,12 @@ class DragonBrowser(QtGui.QMainWindow):
                 ax.autoscale(enable=True)
             ax.autoscale_view()
 
+        if self.cb_physical.isChecked():
+            self.axs['high'].set_xlabel('Cell ID')
+        else:
+            self.axs['high'].set_xlabel('Sample ID')
+            self.axs['high'].set_xlim(-0.5, event.roi)
+
         self.fig.canvas.draw()
         self.text.setText('Event: {}'.format(
             self.dragon_event.header.event_counter
@@ -180,21 +191,10 @@ class DragonBrowser(QtGui.QMainWindow):
         if event.key() == QtCore.Qt.Key_Right:
             self.next_event()
 
-        if event.key() == QtCore.Qt.Key_Left:
-            self.previous_event()
-
     def next_event(self):
         try:
-            self.dragon_event = next(self.generator)
+            self.dragon_event = self.calib(next(self.generator))
         except StopIteration:
-            pass
-        else:
-            self.update()
-
-    def previous_event(self):
-        try:
-            self.dragon_event = self.generator.previous()
-        except ValueError:
             pass
         else:
             self.update()

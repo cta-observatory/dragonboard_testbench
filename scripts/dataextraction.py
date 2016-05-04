@@ -10,8 +10,9 @@ Usage:
 Options:
   -h --help     Show this screen.
   --version     Show version.
-  --outpath N   Outputfile path [default: calibration_constants.pickle]
-
+  --outpath N   Outputfile path [default: data.hdf5]
+  -c --calib P  Path to calibration file
+  -e --extra P  Path to extra offset file
 '''
 
 import dragonboard as dr
@@ -21,7 +22,9 @@ from docopt import docopt
 import pandas as pd
 from collections import defaultdict
 import numpy as np
-
+from dragonboard.calibration import TimelapseCalibration
+from dragonboard.calibration import TimelapseCalibrationExtraOffsets
+from dragonboard.calibration import MedianTimelapseExtraOffsets
 
 def write(store, data):
     for (pixel, gain), value in data.items():
@@ -37,10 +40,22 @@ def write(store, data):
         )
 
 
-def extract_data(inputfiles):
+def extract_data(inputfiles, outpath, calibpath=None, extrapath=None, a=None, b=None):
     ''' calculate time lapse dependence for a given capacitor '''
+    if not extrapath is None and calibpath is None:
+        print("using: MedianTimelapseExtraOffsets")
+        calib = MedianTimelapseExtraOffsets(extrapath)
+    elif not extrapath is None and not calibpath is None:
+        print("using: TimelapseCalibrationExtraOffsets")
+        calib = TimelapseCalibrationExtraOffsets(calibpath, extrapath)
+    elif not calibpath is None and extrapath is None:
+        print("using: TimelapseCalibration")
+        calib = TimelapseCalibration(calibpath)
+    else:
+        print("using: --")
+        calib = lambda x: x
 
-    with pd.HDFStore('data.hdf5', mode='w', comp_level=5, comp_lib='blosc') as store:
+    with pd.HDFStore(outpath, mode='w', comp_level=5, comp_lib='blosc') as store:
 
         sample_ids = None
         for filename in sorted(inputfiles):
@@ -52,6 +67,8 @@ def extract_data(inputfiles):
                     leave=True,
                     unit=' events',
                     ):
+
+                event = calib(event)
 
                 if sample_ids is None or sample_ids.shape != event.roi:
                     sample_ids = np.arange(event.roi)
@@ -85,4 +102,10 @@ if __name__ == '__main__':
     arguments = docopt(
         __doc__, version='Dragon Board Time-Dependent Offset Calculation v.1.0'
     )
-    extract_data(arguments['<inputfiles>'])
+    extract_data(
+        arguments['<inputfiles>'],
+        outpath=arguments['--outpath'],
+        calibpath=arguments["--calib"],
+        extrapath=arguments["--extra"]
+    )
+
