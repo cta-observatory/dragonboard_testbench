@@ -17,6 +17,10 @@ def read_calib_constants(filepath):
 
 
 class TimelapseCalibration:
+    ''' Performs timelapse correction of measured data of
+    the form calibrated = data - a * time_since_last_readout**b +c
+    where a, b and c come from the fits performed by scripts/fit_delta_t.py
+    '''
 
     def __init__(self, filename):
         self.calib_constants = read_calib_constants(filename)
