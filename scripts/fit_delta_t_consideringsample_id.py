@@ -3,7 +3,7 @@ Usage:
     fit_delta_t_consideringsample_id.py <inputfile> <outputfile> [options]
 
 Options:
-    -n <n>, --n-jobs=<n>     How many threads to use [default: 1]
+    -n <n>, --n-jobs=<n>     How many threads to use [default: 2]
     -v <v>, --verbosity=<v>  Verbosity of joblib [default: 5]
 '''
 import pandas as pd
