@@ -1,22 +1,28 @@
 '''
 Usage:
-    timeseries_std.py <inputfile> <calc_method_1> <calc_method_2> <calc_method_3> <outputfile> [options]
+    timeseries_std.py <inputfile> <calc_method_1> <calc_method_2> [options]
 
 Options:
     -p <pixel>       Pixel [default: 0]
-    -c <channel>     Channel [default: low]
+    -g <gain>        Gain [default: low]
     -n <cores>       Cores to use [default: 1]
     -v <verbosity>   Verbosity [default: 10]
     -m <max_events>  Maximum number of Events
 '''
 from dragonboard import EventGenerator
 from dragonboard.calibration import TimelapseCalibration
+from dragonboard.calibration import TimelapseCalibrationExtraOffsets
+from dragonboard.calibration import MedianTimelapseExtraOffsets
 from joblib import Parallel, delayed
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 from docopt import docopt
+import dragonboard as db
+from tqdm import tqdm
+import os
 
+# timeseries_std.py <inputfile> <calc_method_1> <calc_method_2> <calc_method_3> <outputfile> [options]
 
 def calc_data(event):
     data = {}
@@ -43,48 +49,94 @@ def calc_data(event):
 
 
 if __name__ == '__main__':
-    args = docopt(__doc__)
+    args = docopt(
+        __doc__, version='Dragon Board Time-Dependent Offset Calculation v.1.0'
+    )
 
     pixel = int(args['-p'])
-    channel = args['-c']
+    gain = args['-g']
+    filename = args["<inputfile>"]
+    # df = pd.read_hdf(args["<calc_method_3>"], key="pixel_{}_{}".format(pixel, gain))
+    # print(df)
 
-    calib_1 = TimelapseCalibration(args['<calc_method_1>'])
-    calib_2 = TimelapseCalibration(args['<calc_method_2>'])
-    calib_3 = TimelapseCalibration(args['<calc_method_3>'])
-        
-    events = EventGenerator(
-        args['<inputfile>'],
-        max_events=int(args['-m']) if args['-m'] else None,
-    )
+    calib = TimelapseCalibration(args['<calc_method_1>'])
+    calib_extra = TimelapseCalibrationExtraOffsets(offsets_file=args['<calc_method_2>'],fits_file=args['<calc_method_1>'])
+    # calib_median = MedianTimelapseExtraOffsets(args['<calc_method_2>'])
 
-    with Parallel(int(args['-n']), verbose=int(args['-v'])) as pool:
+    # cell,sample,a,b,c,chisq_ndf,pixel,channel
+    # df = pd.read_hdf(args["<calc_method_2>"])
+    # for index, row in tqdm(df.iterrows()):    
+    #     print(row["a"])
+    # cell = 1234
+    # channel = gain
+    # sample = 12
+    # print(df.loc[cell])
+    # for sample in range(40):
+    # a, b, c = df.loc[(df["cell"] == cell) & (df["sample"] == sample) & (df["channel"] == gain) & (df["pixel"] == pixel)].values.T[2:5]
 
-        data = pd.DataFrame(
-            pool(delayed(calc_data)(event) for event in events)
-        )
+    # print(df.loc[(df["cell"] == cell) & (df["sample"] == sample) & (df["channel"] == gain) & (df["pixel"] == pixel)].values.T[2:5])
 
-    plt.style.use('ggplot')
-    fig, ax = plt.subplots()
+    # index = 0
+    # time = []
+    # time.append(0)
+    # calib = []
 
-    data['uncalib_std'].plot.hist(
-        bins=100, range=[0, 60], histtype='step', legend='false',
-        ax=ax, label='Uncalibrated'
-    )
-    data['calib_1_std'].plot.hist(
-        bins=100, range=[0, 60], histtype='step', legend='false',
-        ax=ax, label='Calibrated_M1'
-    )
-    data['calib_2_std'].plot.hist(
-        bins=100, range=[0, 60], histtype='step', legend='false',
-        ax=ax, label='Calibrated_M2'
-    )
-    data['calib_3_std'].plot.hist(
-        bins=100, range=[0, 60], histtype='step', legend='false',
-        ax=ax, label='Calibrated_M3'
-    )
+    # for event in tqdm(
+    #     iterable=EventGenerator(filename, max_events=1),
+    #     desc=os.path.basename(filename),
+    #     leave=True,
+    #     unit=" events"
+    #     ):
+    #     index += 1
+    #     time.append(event.header.counter_133MHz / 133e4)
+    #     dt = time[index] - time[index-1]
+    #     cell = event.header.stop_cells[gain][pixel]
+    #     calib_event = []
+    #     for sample in tqdm(range(40)):
+    #         raw_adc = event.data[gain][pixel][sample]
+    #         a, b, c = df.loc[(df["cell"] == cell) & (df["sample"] == sample) & (df["channel"] == gain) & (df["pixel"] == pixel)].values.T[2:5]
+    #         offset = a*dt**b+c
+    #         adc = raw_adc - float(offset)
+    #         calib_event.append(int(adc))
+    #     calib.append(calib_event)
+    
+    # print(calib[0])
+    # plt.plot(calib[0])
+    # plt.show()
+    
+    # events = EventGenerator(
+    #     args['<inputfile>'],
+    #     max_events=int(args['-m']) if args['-m'] else None,
+    # )
 
-    ax.set_xlabel('Timeseries standard deviation')
-    fig.tight_layout()
-    plt.show()
+    # with Parallel(int(args['-n']), verbose=int(args['-v'])) as pool:
 
-    data.to_hdf(args['<outputfile>'], 'data')
+    #     data = pd.DataFrame(
+    #         pool(delayed(calc_data)(event) for event in events)
+    #     )
+
+    # plt.style.use('ggplot')
+    # fig, ax = plt.subplots()
+
+    # data['uncalib_std'].plot.hist(
+    #     bins=100, range=[0, 60], histtype='step', legend='false',
+    #     ax=ax, label='Uncalibrated'
+    # )
+    # data['calib_1_std'].plot.hist(
+    #     bins=100, range=[0, 60], histtype='step', legend='false',
+    #     ax=ax, label='Calibrated_M1'
+    # )
+    # data['calib_2_std'].plot.hist(
+    #     bins=100, range=[0, 60], histtype='step', legend='false',
+    #     ax=ax, label='Calibrated_M2'
+    # )
+    # data['calib_3_std'].plot.hist(
+    #     bins=100, range=[0, 60], histtype='step', legend='false',
+    #     ax=ax, label='Calibrated_M3'
+    # )
+
+    # ax.set_xlabel('Timeseries standard deviation')
+    # fig.tight_layout()
+    # plt.show()
+
+    # data.to_hdf(args['<outputfile>'], 'data')
