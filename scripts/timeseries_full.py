@@ -18,9 +18,9 @@ from dragonboard.calibration import NoCalibration
 from joblib import Parallel, delayed
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
 from docopt import docopt
 from collections import defaultdict
+
 
 def calc_data(event):
     data = defaultdict(dict)
@@ -32,13 +32,12 @@ def calc_data(event):
         for pixel in range(7):
             for channel in event.data.dtype.names:
 
+                idx = (event.header.event_counter, pixel, channel)
 
-                index = (event.header.event_counter, pixel, channel)
-
-                data[key + '_mean'][index] = np.mean(event.data[pixel][channel])
-                data[key + '_std'][index] = np.std(event.data[pixel][channel])
-                data[key + '_min'][index] = np.min(event.data[pixel][channel])
-                data[key + '_max'][index] = np.max(event.data[pixel][channel])
+                data[key + '_mean'][idx] = np.mean(event_calib.data[pixel][channel])
+                data[key + '_std'][idx] = np.std(event_calib.data[pixel][channel])
+                data[key + '_min'][idx] = np.min(event_calib.data[pixel][channel])
+                data[key + '_max'][idx] = np.max(event_calib.data[pixel][channel])
 
     return pd.DataFrame(data)
 
