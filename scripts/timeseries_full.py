@@ -25,12 +25,13 @@ from collections import defaultdict
 def calc_data(event):
     data = defaultdict(dict)
 
-    for pixel in range(7):
-        for channel in event.data.dtype.names:
+    for calib in calibs:
+        key = calib.__class__.__name__
+        event_calib = calib(event)
 
-            for calib in calibs:
-                event_calib = calib(event)
-                key = calib.__class__.__name__
+        for pixel in range(7):
+            for channel in event.data.dtype.names:
+
 
                 index = (event.header.event_counter, pixel, channel)
 
