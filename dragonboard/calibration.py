@@ -118,7 +118,8 @@ class TimelapseCalibrationExtraOffsets:
                 a, b = self.calib_constants.loc[pixel, gain].loc[cells].values.T
                 delta_t_offset = self.offset(dt, a, b).astype('>i2')
                 extra_offset = self.offsets[pixel, gain_id, cells, self.sample].astype('>i2')
-                event.data[pixel][gain] -= delta_t_offset + extra_offset.values
+                event.data[pixel][gain] -= delta_t_offset + extra_offset
+                #removed .values after extra_offset
 
         return event
 
