@@ -1,6 +1,6 @@
 '''
 Usage:
-    timeseries_std.py <inputfile> <fit_delta_t.py_output_file> <offset_cell_sample.py_output_file> [options]
+    timeseries_std.py <inputfile> <fit_delta_t.py_output_file> <offset_cell_sample.py_output_file> <outputfile> [options]
 
 Options:
     -p <pixel>       Pixel [default: 0]
@@ -24,21 +24,29 @@ def calc_data(event):
 
     data['uncalib_mean'] = np.mean(event.data[pixel][channel])
     data['uncalib_std'] = np.std(event.data[pixel][channel])
+    data['uncalib_min'] = np.min(event.data[pixel][channel])
+    data['uncalib_max'] = np.max(event.data[pixel][channel])
 
     event_calib_1 = calib_1(event)
 
     data['calib_1_mean'] = np.mean(event_calib_1.data[pixel][channel])
     data['calib_1_std'] = np.std(event_calib_1.data[pixel][channel])
+    data['calib_1'] = np.min(event.data[pixel][channel])
+    data['calib_1'] = np.max(event.data[pixel][channel])
 
     event_calib_2 = calib_2(event)
 
     data['calib_2_mean'] = np.mean(event_calib_2.data[pixel][channel])
     data['calib_2_std'] = np.std(event_calib_2.data[pixel][channel])
+    data['calib_2'] = np.min(event.data[pixel][channel])
+    data['calib_2'] = np.max(event.data[pixel][channel])
 
     event_calib_3 = calib_3(event)
 
     data['calib_3_mean'] = np.mean(event_calib_3.data[pixel][channel])
     data['calib_3_std'] = np.std(event_calib_3.data[pixel][channel])
+    data['calib_3'] = np.min(event.data[pixel][channel])
+    data['calib_3'] = np.max(event.data[pixel][channel])
 
     return data
 
@@ -91,4 +99,4 @@ if __name__ == '__main__':
     fig.tight_layout()
     plt.show()
 
-    # data.to_hdf(args['<outputfile>'], 'data')
+    data.to_hdf(args['<outputfile>'], 'timeseries_full_data')
