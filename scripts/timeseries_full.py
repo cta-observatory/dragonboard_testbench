@@ -13,6 +13,7 @@ from dragonboard import EventGenerator
 from dragonboard.calibration import TimelapseCalibration
 from dragonboard.calibration import TimelapseCalibrationExtraOffsets
 from dragonboard.calibration import MedianTimelapseExtraOffsets
+from dragonboard.calibration import MedianTimelapseCalibration
 from joblib import Parallel, delayed
 import numpy as np
 import pandas as pd
@@ -48,6 +49,13 @@ def calc_data(event):
     data['calib_3'] = np.min(event.data[pixel][channel])
     data['calib_3'] = np.max(event.data[pixel][channel])
 
+    event_calib_4 = calib_4(event)
+
+    data['calib_4_mean'] = np.mean(event_calib_4.data[pixel][channel])
+    data['calib_4_std'] = np.std(event_calib_4.data[pixel][channel])
+    data['calib_4'] = np.min(event.data[pixel][channel])
+    data['calib_4'] = np.max(event.data[pixel][channel])
+
     return data
 
 
@@ -61,7 +69,8 @@ if __name__ == '__main__':
     
     calib_1 = TimelapseCalibration(args['<fit_delta_t.py_output_file>'])
     calib_2 = TimelapseCalibrationExtraOffsets(offsets_file=args['<offset_cell_sample.py_output_file>'],fits_file=args['<fit_delta_t.py_output_file>'])
-    calib_3 = MedianTimelapseExtraOffsets(args['<offset_cell_sample.py_output_file>'])        
+    calib_3 = MedianTimelapseExtraOffsets(args['<offset_cell_sample.py_output_file>']) 
+    calib_4 = MedianTimelapseCalibration(args['<fit_delta_t.py_output_file>'])       
 
     events = EventGenerator(
         args['<inputfile>'],
@@ -79,19 +88,23 @@ if __name__ == '__main__':
 
     data['uncalib_std'].plot.hist(
         bins=100, range=[0, 60], histtype='step', legend='false',
-        ax=ax, label='Uncalibrated'
+        ax=ax, label='Uncalibrated', color="red"
     )
     data['calib_1_std'].plot.hist(
         bins=100, range=[0, 60], histtype='step', legend='false',
-        ax=ax, label='TimelapseCalibration'
+        ax=ax, label='TimelapseCalibration', color="blue"
     )
     data['calib_2_std'].plot.hist(
         bins=100, range=[0, 60], histtype='step', legend='false',
-        ax=ax, label='TimelapseCalibrationExtraOffsets'
+        ax=ax, label='TimelapseCalibrationExtraOffsets', color="green"
     )
     data['calib_3_std'].plot.hist(
         bins=100, range=[0, 60], histtype='step', legend='false',
-        ax=ax, label='MedianTimelapseExtraOffsets'
+        ax=ax, label='MedianTimelapseExtraOffsets', color="black"
+    )
+    data['calib_4_std'].plot.hist(
+        bins=100, range=[0, 60], histtype='step', legend='false',
+        ax=ax, label='MedianTimelapseCalibration', color="orange"
     )
 
     plt.title("pixel: {}, {}".format(pixel,channel))
