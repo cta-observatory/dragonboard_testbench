@@ -8,47 +8,42 @@ Options:
     -n <cores>       Cores to use [default: 1]
     -v <verbosity>   Verbosity [default: 10]
     -m <max_events>  Maximum number of Events
+    --skip=<N>       Number of events to skip at start [default: 0]
 '''
 from dragonboard import EventGenerator
 from dragonboard.calibration import TimelapseCalibration
 from dragonboard.calibration import TimelapseCalibrationExtraOffsets
 from dragonboard.calibration import MedianTimelapseExtraOffsets
+<<<<<<< HEAD
 from dragonboard.calibration import MedianTimelapseCalibration
+=======
+from dragonboard.calibration import NoCalibration
+>>>>>>> e3819ed300dac4e3a62dbc08e0890d6558036c54
 from joblib import Parallel, delayed
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
 from docopt import docopt
+from collections import defaultdict
+
 
 def calc_data(event):
-    data = {}
+    data = defaultdict(dict)
 
-    data['uncalib_mean'] = np.mean(event.data[pixel][channel])
-    data['uncalib_std'] = np.std(event.data[pixel][channel])
-    data['uncalib_min'] = np.min(event.data[pixel][channel])
-    data['uncalib_max'] = np.max(event.data[pixel][channel])
+    for calib in calibs:
+        key = calib.__class__.__name__
+        event_calib = calib(event)
 
-    event_calib_1 = calib_1(event)
+        for pixel in range(7):
+            for channel in event.data.dtype.names:
 
-    data['calib_1_mean'] = np.mean(event_calib_1.data[pixel][channel])
-    data['calib_1_std'] = np.std(event_calib_1.data[pixel][channel])
-    data['calib_1'] = np.min(event.data[pixel][channel])
-    data['calib_1'] = np.max(event.data[pixel][channel])
+                idx = (event.header.event_counter, pixel, channel)
 
-    event_calib_2 = calib_2(event)
+                data[key + '_mean'][idx] = np.mean(event_calib.data[pixel][channel])
+                data[key + '_std'][idx] = np.std(event_calib.data[pixel][channel])
+                data[key + '_min'][idx] = np.min(event_calib.data[pixel][channel])
+                data[key + '_max'][idx] = np.max(event_calib.data[pixel][channel])
 
-    data['calib_2_mean'] = np.mean(event_calib_2.data[pixel][channel])
-    data['calib_2_std'] = np.std(event_calib_2.data[pixel][channel])
-    data['calib_2'] = np.min(event.data[pixel][channel])
-    data['calib_2'] = np.max(event.data[pixel][channel])
-
-    event_calib_3 = calib_3(event)
-
-    data['calib_3_mean'] = np.mean(event_calib_3.data[pixel][channel])
-    data['calib_3_std'] = np.std(event_calib_3.data[pixel][channel])
-    data['calib_3'] = np.min(event.data[pixel][channel])
-    data['calib_3'] = np.max(event.data[pixel][channel])
-
+<<<<<<< HEAD
     event_calib_4 = calib_4(event)
 
     data['calib_4_mean'] = np.mean(event_calib_4.data[pixel][channel])
@@ -57,6 +52,9 @@ def calc_data(event):
     data['calib_4'] = np.max(event.data[pixel][channel])
 
     return data
+=======
+    return pd.DataFrame(data)
+>>>>>>> e3819ed300dac4e3a62dbc08e0890d6558036c54
 
 
 if __name__ == '__main__':
@@ -66,23 +64,40 @@ if __name__ == '__main__':
 
     pixel = int(args['-p'])
     channel = args['-g']
+<<<<<<< HEAD
     
     calib_1 = TimelapseCalibration(args['<fit_delta_t.py_output_file>'])
     calib_2 = TimelapseCalibrationExtraOffsets(offsets_file=args['<offset_cell_sample.py_output_file>'],fits_file=args['<fit_delta_t.py_output_file>'])
     calib_3 = MedianTimelapseExtraOffsets(args['<offset_cell_sample.py_output_file>']) 
     calib_4 = MedianTimelapseCalibration(args['<fit_delta_t.py_output_file>'])       
+=======
+
+    calibs = [
+        NoCalibration(),
+        TimelapseCalibration(args['<fit_delta_t.py_output_file>']),
+        TimelapseCalibrationExtraOffsets(
+            offsets_file=args['<offset_cell_sample.py_output_file>'],
+            fits_file=args['<fit_delta_t.py_output_file>']
+        ),
+        MedianTimelapseExtraOffsets(args['<offset_cell_sample.py_output_file>'])
+    ]
+>>>>>>> e3819ed300dac4e3a62dbc08e0890d6558036c54
 
     events = EventGenerator(
         args['<inputfile>'],
         max_events=int(args['-m']) if args['-m'] else None,
     )
 
+    for i in range(int(args['--skip'])):
+        next(events)
+
     with Parallel(int(args['-n']), verbose=int(args['-v'])) as pool:
 
-        data = pd.DataFrame(
+        data = pd.concat(
             pool(delayed(calc_data)(event) for event in events)
         )
 
+<<<<<<< HEAD
     plt.style.use('ggplot')
     fig, ax = plt.subplots()
 
@@ -113,3 +128,6 @@ if __name__ == '__main__':
     plt.show()
 
     data.to_hdf(args['<outputfile>'], 'timeseries_full_data')
+=======
+    data.to_hdf(args['<outputfile>'], 'timeseries_full_data')
+>>>>>>> e3819ed300dac4e3a62dbc08e0890d6558036c54
