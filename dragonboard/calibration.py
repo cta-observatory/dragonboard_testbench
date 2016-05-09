@@ -79,6 +79,72 @@ def read_offsets(offsets_file):
     return offsets
 
 
+class MedianTimelapseCalibration:
+    ''' Performs timelapse correction of measured data of
+    the form calibrated = data - a * time_since_last_readout**b +c
+    where c comes from the fits performed by scripts/fit_delta_t.py
+    and a,b are median values.
+    '''
+
+    def __init__(self, filename):
+        self.calib_constants = read_calib_constants(filename)
+        self.roi = None
+        self.sample = None
+
+    def offset(self, delta_t, a, b, c):
+        o = a * delta_t ** b + c
+        mask = np.isnan(o)
+        o[mask] = c[mask]
+
+        o[np.isnan(o)] = 0
+
+        return o
+
+    def __call__(self, event):
+        ''' calibrate data in event '''
+        event = deepcopy(event)
+
+        if self.roi is None:
+            self.roi = event.roi
+            self.sample = np.arange(event.roi)
+
+        assert self.roi == event.roi
+
+        for pixel in range(len(event.data)):
+            for channel in event.data.dtype.names:
+                sc = event.header.stop_cells[pixel][channel]
+                cells = sample2cell(self.sample, sc)
+
+                a, b, c = self.calib_constants.loc[pixel, channel].loc[cells].values.T
+                a = 1.4599324285222228
+                b = -0.37503250093991702
+                dt = event.time_since_last_readout[pixel][channel]
+                event.data[pixel][channel] -= self.offset(dt, a, b, c).astype('>i2')
+
+        return event
+
+
+def read_offsets(offsets_file):
+    offsets = np.zeros(
+            shape=(8, 2, 4096, 40),
+            dtype='f4')
+
+    def name_to_channel_gain_id(name):
+        _, channel, gain = name.split('_')
+        channel = int(channel)
+        gain_id = {'high':0, 'low':1}[gain]
+        return channel, gain_id
+
+    with pd.HDFStore(offsets_file) as st:
+        for name in st.keys():
+            channel, gain_id = name_to_channel_gain_id(name)
+            df = st[name]
+            df.sort_values(["cell","sample"], inplace=True)
+            offsets[channel, gain_id] = df["median"].values.reshape(-1, 40)
+
+    return offsets
+
+
 class TimelapseCalibrationExtraOffsets:
     ''' Performs timelapse correction of measured data of
     the form calibrated = data - a * time_since_last_readout**b +c.
@@ -119,7 +185,6 @@ class TimelapseCalibrationExtraOffsets:
                 delta_t_offset = self.offset(dt, a, b).astype('>i2')
                 extra_offset = self.offsets[pixel, gain_id, cells, self.sample].astype('>i2')
                 event.data[pixel][gain] -= delta_t_offset + extra_offset
-                #removed .values after extra_offset
 
         return event
 
