@@ -1,7 +1,6 @@
 '''
 Usage:
     timeseries_std.py <inputfile> <fit_delta_t.py_output_file> <offset_cell_sample.py_output_file> <outputfile> [options]
-
 Options:
     -n <cores>       Cores to use [default: 1]
     -v <verbosity>   Verbosity [default: 10]
@@ -37,14 +36,6 @@ def calc_data(event, start=None, end=None):
 
                 idx = (event.header.event_counter, pixel, channel)
 
-<<<<<<< HEAD
-                data[key + '_mean'][idx] = np.mean(event_calib.data[pixel][channel])
-                data[key + '_std'][idx] = np.std(event_calib.data[pixel][channel])
-                data[key + '_min'][idx] = np.min(event_calib.data[pixel][channel])
-                data[key + '_max'][idx] = np.max(event_calib.data[pixel][channel])
-
-    return pd.DataFrame(data)
-=======
                 data[key + '_mean'][idx] = np.mean(event_calib.data[pixel][channel][sl])
                 data[key + '_std'][idx] = np.std(event_calib.data[pixel][channel][sl])
                 data[key + '_min'][idx] = np.min(event_calib.data[pixel][channel][sl])
@@ -53,7 +44,6 @@ def calc_data(event, start=None, end=None):
     df = pd.DataFrame(data)
     df.index.names = 'event', 'pixel', 'channel'
     return df
->>>>>>> d77d4bf55ac190daa50db5a7c428335911d2fb80
 
 
 if __name__ == '__main__':
@@ -61,12 +51,6 @@ if __name__ == '__main__':
         __doc__, version='Dragon Board Time-Dependent Offset Calculation v.1.0'
     )
 
-<<<<<<< HEAD
-    pixel = int(args['-p'])
-    channel = args['-g']
-
-=======
->>>>>>> d77d4bf55ac190daa50db5a7c428335911d2fb80
     calibs = [
         NoCalibration(),
         TimelapseCalibration(args['<fit_delta_t.py_output_file>']),
@@ -75,14 +59,9 @@ if __name__ == '__main__':
             fits_file=args['<fit_delta_t.py_output_file>']
         ),
         MedianTimelapseExtraOffsets(args['<offset_cell_sample.py_output_file>']),
-<<<<<<< HEAD
-        MedianTimelapseCalibration(args['<fit_delta_t.py_output_file>'])
-    ]
-=======
         MedianTimelapseCalibration(args['<fit_delta_t.py_output_file>']),
     ]
 
->>>>>>> d77d4bf55ac190daa50db5a7c428335911d2fb80
     events = EventGenerator(
         args['<inputfile>'],
         max_events=int(args['-m']) if args['-m'] else None,
@@ -103,37 +82,4 @@ if __name__ == '__main__':
             )
         )
 
-<<<<<<< HEAD
-    plt.style.use('ggplot')
-    fig, ax = plt.subplots()
-
-    data['uncalib_std'].plot.hist(
-        bins=100, range=[0, 60], histtype='step', legend='false',
-        ax=ax, label='Uncalibrated', color="red"
-    )
-    data['calib_1_std'].plot.hist(
-        bins=100, range=[0, 60], histtype='step', legend='false',
-        ax=ax, label='TimelapseCalibration', color="blue"
-    )
-    data['calib_2_std'].plot.hist(
-        bins=100, range=[0, 60], histtype='step', legend='false',
-        ax=ax, label='TimelapseCalibrationExtraOffsets', color="green"
-    )
-    data['calib_3_std'].plot.hist(
-        bins=100, range=[0, 60], histtype='step', legend='false',
-        ax=ax, label='MedianTimelapseExtraOffsets', color="black"
-    )
-    data['calib_4_std'].plot.hist(
-        bins=100, range=[0, 60], histtype='step', legend='false',
-        ax=ax, label='MedianTimelapseCalibration', color="orange"
-    )
-
-    plt.title("pixel: {}, {}".format(pixel,channel))
-    ax.set_xlabel('Timeseries standard deviation')
-    fig.tight_layout()
-    plt.show()
-
     data.to_hdf(args['<outputfile>'], 'timeseries_full_data')
-=======
-    data.to_hdf(args['<outputfile>'], 'timeseries_full_data')
->>>>>>> d77d4bf55ac190daa50db5a7c428335911d2fb80
