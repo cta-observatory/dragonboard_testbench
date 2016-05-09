@@ -42,7 +42,9 @@ def calc_data(event, start=None, end=None):
                 data[key + '_min'][idx] = np.min(event_calib.data[pixel][channel][sl])
                 data[key + '_max'][idx] = np.max(event_calib.data[pixel][channel][sl])
 
-    return pd.DataFrame(data)
+    df = pd.DataFrame(data)
+    df.index.names = 'event', 'pixel', 'channel'
+    return df
 
 
 if __name__ == '__main__':
