@@ -12,8 +12,8 @@ class NoCalibration:
 
 def read_calib_constants(filepath):
     return pd.read_hdf(filepath).drop('chisq_ndf', axis=1).set_index(
-            ['pixel', 'channel', 'cell']
-        ).sort_index()
+        ['pixel', 'channel', 'cell']
+    ).sort_index()
 
 
 class TimelapseCalibration:
@@ -66,14 +66,14 @@ def read_offsets(offsets_file):
     def name_to_channel_gain_id(name):
         _, channel, gain = name.split('_')
         channel = int(channel)
-        gain_id = {'high':0, 'low':1}[gain]
+        gain_id = {'high': 0, 'low': 1}[gain]
         return channel, gain_id
 
     with pd.HDFStore(offsets_file) as st:
         for name in st.keys():
             channel, gain_id = name_to_channel_gain_id(name)
             df = st[name]
-            df.sort_values(["cell","sample"], inplace=True)
+            df.sort_values(["cell", "sample"], inplace=True)
             offsets[channel, gain_id] = df["median"].values.reshape(-1, 40)
 
     return offsets
@@ -122,27 +122,6 @@ class MedianTimelapseCalibration:
                 event.data[pixel][channel] -= self.offset(dt, a, b, c).astype('>i2')
 
         return event
-
-
-def read_offsets(offsets_file):
-    offsets = np.zeros(
-            shape=(8, 2, 4096, 40),
-            dtype='f4')
-
-    def name_to_channel_gain_id(name):
-        _, channel, gain = name.split('_')
-        channel = int(channel)
-        gain_id = {'high':0, 'low':1}[gain]
-        return channel, gain_id
-
-    with pd.HDFStore(offsets_file) as st:
-        for name in st.keys():
-            channel, gain_id = name_to_channel_gain_id(name)
-            df = st[name]
-            df.sort_values(["cell","sample"], inplace=True)
-            offsets[channel, gain_id] = df["median"].values.reshape(-1, 40)
-
-    return offsets
 
 
 class TimelapseCalibrationExtraOffsets:
