@@ -1,11 +1,7 @@
 '''
-extract performance information for several calibration methods:
-inputfile: .dat file
-fit constants: fit_delta_t.py output file
-offsets: offsets_cell_sample.py output file
-
 Usage:
     calibration_performance.py <inputfile> <fit_constants> <offsets> <outputfile> [options]
+
 Options:
     -n <cores>       Cores to use [default: 1]
     -v <verbosity>   Verbosity [default: 10]
@@ -13,6 +9,11 @@ Options:
     --skip=<N>       Number of events to skip at start [default: 0]
     --start=<N>      First sample to consider
     --end=<N>        Last sample to consider, negative numbers count from end
+
+extract performance information for several calibration methods:
+inputfile: .dat file
+fit constants: fit_delta_t.py output file
+offsets: offsets_cell_sample.py output file
 '''
 from dragonboard import EventGenerator
 from dragonboard.calibration import TimelapseCalibration
