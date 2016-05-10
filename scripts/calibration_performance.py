@@ -1,6 +1,11 @@
 '''
+extract performance information for several calibration methods:
+inputfile: .dat file
+fit constants: fit_delta_t.py output file
+offsets: offsets_cell_sample.py output file
+
 Usage:
-    timeseries_std.py <inputfile> <fit_delta_t.py_output_file> <offset_cell_sample.py_output_file> <outputfile> [options]
+    calibration_performance.py <inputfile> <fit_constants> <offsets> <outputfile> [options]
 Options:
     -n <cores>       Cores to use [default: 1]
     -v <verbosity>   Verbosity [default: 10]
@@ -53,13 +58,13 @@ if __name__ == '__main__':
 
     calibs = [
         NoCalibration(),
-        TimelapseCalibration(args['<fit_delta_t.py_output_file>']),
+        TimelapseCalibration(args['<fit_constants>']),
         TimelapseCalibrationExtraOffsets(
-            offsets_file=args['<offset_cell_sample.py_output_file>'],
-            fits_file=args['<fit_delta_t.py_output_file>']
+            offsets_file=args['<offsets>'],
+            fits_file=args['<fit_constants>']
         ),
-        MedianTimelapseExtraOffsets(args['<offset_cell_sample.py_output_file>']),
-        MedianTimelapseCalibration(args['<fit_delta_t.py_output_file>']),
+        MedianTimelapseExtraOffsets(args['<offsets>']),
+        MedianTimelapseCalibration(args['<fit_constants>']),
     ]
 
     events = EventGenerator(
