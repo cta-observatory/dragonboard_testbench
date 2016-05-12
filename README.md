@@ -33,7 +33,7 @@ If you do not provide `<inputfile>`, a file dialog will open
 
 Use `python offset_calculation.py <inputfiles> ... [options]` to convert raw data.dat files to .hdf5 files that can be used by further scripts.
 
-Use `python fit_delta_t.py <inputfile> <outputfile> [options]` to calculate a powerlaw fit a**x^b+c for every cell.
+Use `python fit_delta_t.py <inputfile> <outputfile> [options]` to calculate a powerlaw fit a*x^b+c for every cell.
 
 Use `python calibration_performance.py <inputfile> <fit_constants> <offsets> <outputfile> [options]` to plot an overview of the performance of all calibration techniques
 
