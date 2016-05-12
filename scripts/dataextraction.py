@@ -1,7 +1,4 @@
 '''
-Save (cell, sample, time_since_last_readout, adc_counts) to an hdf5 file
-for all given inputfiles.
-
 Usage:
   offset_calculation.py <inputfiles> ... [options]
   offset_calculation.py (-h | --help)
@@ -13,6 +10,9 @@ Options:
   --outpath N   Outputfile path [default: data.hdf5]
   -c --calib P  Path to calibration file
   -e --extra P  Path to extra offset file
+
+Save (cell, sample, time_since_last_readout, adc_counts) to an hdf5 file
+for all given inputfiles.
 '''
 
 import dragonboard as dr
@@ -25,6 +25,7 @@ import numpy as np
 from dragonboard.calibration import TimelapseCalibration
 from dragonboard.calibration import TimelapseCalibrationExtraOffsets
 from dragonboard.calibration import MedianTimelapseExtraOffsets
+
 
 def write(store, data):
     for (pixel, gain), value in data.items():
@@ -108,4 +109,3 @@ if __name__ == '__main__':
         calibpath=arguments["--calib"],
         extrapath=arguments["--extra"]
     )
-
