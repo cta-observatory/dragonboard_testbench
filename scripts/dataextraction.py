@@ -13,6 +13,7 @@ Options:
 
 Save (cell, sample, time_since_last_readout, adc_counts) to an hdf5 file
 for all given inputfiles.
+inputfiles: raw_data.dat
 '''
 
 import dragonboard as dr
