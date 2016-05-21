@@ -15,7 +15,7 @@ from dragonboard import EventGenerator
 from dragonboard.calibration import TimelapseCalibration
 from joblib import Parallel, delayed
 from docopt import docopt
-import joblib
+import pickle
 import os
 
 def calc_data(event):
@@ -43,4 +43,25 @@ if __name__ == '__main__':
             )
         )
 
-    joblib.dump(data, args['<outputfile>'] + '{}_calib.pickle'.format(os.path.basename(args['<inputfile>'])), compress=5)
+    file = (args['<outputfile>'] + '{}_calib.pickle'.format(os.path.basename(args['<inputfile>'])))
+    max_data_size = 10000
+
+    for i in range(int(len(data) / max_data_size)):
+        try:
+            f = open(file, "rb")
+            calib_data = []
+            while 1:
+                try:
+                    calib_data.append(pickle.load(f))
+                except EOFError:
+                    break
+        except:
+            pass
+        f = open(file, "wb")
+        try:
+            for data_item in calib_data:
+                pickle.dump(data_item, f)
+        except:
+            pass
+        pickle.dump(data[i * max_data_size:(i + 1) * max_data_size - 1], f)
+        f.close()
