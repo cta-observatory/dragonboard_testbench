@@ -1,6 +1,6 @@
 """
 Usage:
-    spike_study.py <inputfile> <outpath> [options]
+    extract_spike_data.py <inputfile> <outpath> [options]
 
 Options:
     -n <cores>       Cores to use [default: 1]
