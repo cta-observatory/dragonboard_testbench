@@ -1,6 +1,6 @@
 """
 Usage:
-    apply_timelapse_calibration.py <inputfile> <fit_constants> <outputfile> [options]
+    apply_timelapse_calibration.py <inputfile> <fit_constants> <outpath> [options]
 
 Options:
     -n <cores>       Cores to use [default: 1]
@@ -10,6 +10,7 @@ Options:
 apply TimelapseCalibration for given .dat file(s):
 inputfile: .dat file
 fit constants: fit_delta_t.py output file
+outpath: path where to put generated data.pickle
 """
 from dragonboard import EventGenerator
 from dragonboard.calibration import TimelapseCalibration
@@ -43,7 +44,7 @@ if __name__ == '__main__':
             )
         )
 
-    file = (args['<outputfile>'] + '{}_calib.pickle'.format(os.path.basename(args['<inputfile>'])))
+    file = (args['<outpath>'] + '{}_calib.pickle'.format(os.path.basename(args['<inputfile>'])))
     max_data_size = 10000
 
     for i in range(int(len(data) / max_data_size)):
