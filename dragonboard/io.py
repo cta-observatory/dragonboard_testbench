@@ -165,10 +165,16 @@ class AbstractEventGenerator(object):
         for g, p in stop_cell_map:
             sc = event_header.stop_cells[g][p]
 
-            time_since_last_readout[g][p] = np.roll(
-                self.last_seen[g][p], -sc)[:self.roi]
-            time_since_last_readout[g][
-                p] = event_header.timestamp - time_since_last_readout[g][p]
+            #time_since_last_readout[g][p] = np.roll(self.last_seen[g][p], -sc)[:self.roi]
+            normal_chunk = self.last_seen[g][p][sc : sc + self.roi]
+            N = len(normal_chunk)
+            time_since_last_readout[g][p][:N] = normal_chunk
+            missing = self.roi - N
+            if missing:
+                extra_chunk = self.last_seen[g][p][:missing]
+                time_since_last_readout[g][p][N:] = extra_chunk
+
+            time_since_last_readout[g][p] = event_header.timestamp - time_since_last_readout[g][p]
 
             cells = (np.arange(self.roi) + sc) % max_roi
             self.last_seen[g][p][cells] = event_header.timestamp
