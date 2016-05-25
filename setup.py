@@ -2,7 +2,7 @@ from setuptools import setup
 
 setup(
     name='dragonboard',
-    version='0.0.2',
+    version='0.0.3',
     description='A reader library for the cta dragonboard data',
     url='http://github.com/cta-observatory/dragonboard_testbench',
     author='Kai Brügge, Mario Hörbe, Dominik Neise, Maximilian Nöthe',
