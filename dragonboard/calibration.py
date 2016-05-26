@@ -27,6 +27,34 @@ class TimelapseCalibration:
         self.roi = None
         self.sample = None
 
+        self.a = np.zeros(
+            8,
+            dtype=[
+                ("low", 'f4', 4096),
+                ("high", 'f4', 4096),
+            ]
+        )
+        self.b = np.zeros(
+            8,
+            dtype=[
+                ("low", 'f4', 4096),
+                ("high", 'f4', 4096),
+            ]
+        )
+        self.c = np.zeros(
+            8,
+            dtype=[
+                ("low", 'f4', 4096),
+                ("high", 'f4', 4096),
+            ]
+        )
+        for pixel in range(8):
+            for channel in ["low", "high"]:
+                a, b, c = self.calib_constants.loc[pixel, channel].values.T
+                self.a[pixel][channel][:] = a
+                self.b[pixel][channel][:] = b
+                self.c[pixel][channel][:] = c
+
     def offset(self, delta_t, a, b, c):
         o = a * delta_t ** b + c
         mask = np.isnan(o)
@@ -51,7 +79,10 @@ class TimelapseCalibration:
                 sc = event.header.stop_cells[pixel][channel]
                 cells = sample2cell(self.sample, sc)
 
-                a, b, c = self.calib_constants.loc[pixel, channel].loc[cells].values.T
+                a = self.a[pixel][channel][cells]
+                b = self.b[pixel][channel][cells]
+                c = self.c[pixel][channel][cells]
+
                 dt = event.time_since_last_readout[pixel][channel]
                 event.data[pixel][channel] -= self.offset(dt, a, b, c).astype('>i2')
 
