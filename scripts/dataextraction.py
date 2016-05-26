@@ -26,6 +26,7 @@ import numpy as np
 from dragonboard.calibration import TimelapseCalibration
 from dragonboard.calibration import TimelapseCalibrationExtraOffsets
 from dragonboard.calibration import MedianTimelapseExtraOffsets
+from dragonboard.calibration import NoCalibration
 
 import psutil
 
@@ -44,20 +45,36 @@ def write(store, data):
         )
 
 
-def extract_data(inputfiles, outpath, memory, calibpath=None, extrapath=None, a=None, b=None):
-    ''' calculate time lapse dependence for a given capacitor '''
-    if not extrapath is None and calibpath is None:
-        print("using: MedianTimelapseExtraOffsets")
+def extract_data(
+        inputfiles,
+        outpath,
+        memory,
+        calibpath=None,
+        extrapath=None,
+        a=None,
+        b=None,
+        ):
+    '''
+    calculate time lapse dependence for a given capacitor
+    If calib path and/or extrapath are given calibrated data is stored
+
+    Possible combinations:
+    calibpath: TimelapseCalibration
+    extrapath: MedianTimelapseExtraOffsets
+    calibpath and extrapath: TimelapseCalibrationExtraOffsets
+    '''
+    if extrapath and not calibpath:
+        print('using: MedianTimelapseExtraOffsets')
         calib = MedianTimelapseExtraOffsets(extrapath)
-    elif not extrapath is None and not calibpath is None:
-        print("using: TimelapseCalibrationExtraOffsets")
+    elif extrapath and calibpath:
+        print('using: TimelapseCalibrationExtraOffsets')
         calib = TimelapseCalibrationExtraOffsets(calibpath, extrapath)
-    elif not calibpath is None and extrapath is None:
-        print("using: TimelapseCalibration")
+    elif not extrapath and calibpath:
+        print('using: TimelapseCalibration')
         calib = TimelapseCalibration(calibpath)
     else:
-        print("using: --")
-        calib = lambda x: x
+        print('using: --')
+        calib = NoCalibration()
 
     p = psutil.Process(os.getpid())
 
@@ -103,16 +120,19 @@ def extract_data(inputfiles, outpath, memory, calibpath=None, extrapath=None, a=
             write(store, data)
 
 
-
-if __name__ == '__main__':
-    arguments = docopt(
+def main():
+    args = docopt(
         __doc__, version='Dragon Board Time-Dependent Offset Calculation v.1.0'
     )
-    arguments["--memory"] = float(arguments["--memory"])
+    args['--memory'] = float(args['--memory'])
     extract_data(
-        arguments['<inputfiles>'],
-        outpath=arguments['--outpath'],
-        calibpath=arguments["--calib"],
-        extrapath=arguments["--extra"],
-        memory=arguments["--memory"]
+        args['<inputfiles>'],
+        outpath=args['--outpath'],
+        calibpath=args['--calib'],
+        extrapath=args['--extra'],
+        memory=args['--memory']
     )
+
+
+if __name__ == '__main__':
+    main()
