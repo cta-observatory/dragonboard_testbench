@@ -28,14 +28,12 @@ def f(x, a, b, c):
 
 
 def fit(df, cell, plot=False):
-    df = df[(5 <= df['sample']) & (df['sample'] < 35)]
-
+    big_time = df.delta_t.quantile(0.75)
     p0 = [
         1.3,
         -0.38,
-        df.adc_counts[df.delta_t > 0.05].mean(),
+        df.adc_counts[df.delta_t >= big_time].mean(),
     ]
-
     try:
         (a, b, c), cov = curve_fit(
             f,
@@ -73,6 +71,15 @@ def main():
                     args['<inputfile>'],
                     'pixel_{}_{}'.format(pixel, channel)
                 )
+
+
+                sample_max = data["sample"].max() - 5
+                sample_min = data["sample"].min() + 5
+
+                data = data[
+                    (data['sample'] >= sample_min) 
+                    & (data['sample'] < sample_max)
+                ]
 
                 by_cell = data.groupby('cell')
                 result = pd.DataFrame(
