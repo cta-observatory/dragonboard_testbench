@@ -16,11 +16,13 @@ setup(
         'tqdm',
         'joblib',
     ],
-    packages=['dragonboard'],
+    packages=['dragonboard', 'dragonboard.tools'],
     entry_points={
         'gui_scripts': [
             'dragonviewer = dragonboard.__main__:main',
             'dragonboard_fakedata = dragonboard.tools.create_fake_data:main',
+            'dragonboard_calc_calib_constants = dragonboard.tools.calc_calib_constants:main',
+            'dragonboard_dataextraction = dragonboard.tools.dataextraction:main',
         ]
     }
 )
