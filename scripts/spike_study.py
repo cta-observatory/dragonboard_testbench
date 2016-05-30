@@ -20,18 +20,8 @@ import time
 from tqdm import tqdm
 
 
-if __name__ == '__main__':
-    args = docopt(
-        __doc__, version='Dragon Board spike study software v.1.0'
-    )
-
-    df = pd.read_hdf(args['<inputfile>'])
-    df = df.loc[df['adc'] >= int(args['-m'])] if args['-m'] else df
-    df = df.sort_values(by=["pixel", "channel", "event_id", "cell_id"])
-    df = df.reset_index(drop=True)
-
-    print(len(df))
-
+def identify_spike_groups(df):
+    """Mark spike data with integer representing its spike order"""
     spike_order = np.ones(len(df))
     j = 0
     for i, row in tqdm(enumerate(df.values)):
@@ -51,11 +41,32 @@ if __name__ == '__main__':
 
     spike_df = pd.DataFrame(spike_order, columns=["spike_order"])
     df = pd.concat([df, spike_df], axis=1)
+    return df
 
-    # for i, row in tqdm(enumerate(df.values)):
-    #     if i == max_idx:
-    #         break
-    #     print(row)
+if __name__ == '__main__':
+    args = docopt(
+        __doc__, version='Dragon Board spike study software v.1.0'
+    )
+
+    df = pd.read_hdf(args['<inputfile>'])
+    df = df.loc[df['adc'] >= int(args['-m'])] if args['-m'] else df
+    df = df.sort_values(by=["pixel", "channel", "event_id", "cell_id"]).reset_index(drop=True)
+    df = identify_spike_groups(df)
+
+    count = Counter(df["spike_order"])
+    keys = list(key for key in count.keys())
+    values = list(value for value in count.values())
+    count = {}
+    for i in range(len(keys)):
+        count[keys[i]] = int(values[i] / keys[i])
+
+    print(count)
+
+
+
+
+
+    # Please disregard until final version of the code:
 
     # print(df.loc[df['event_id'] >= 584])
     # df.hist(column="sample_id", bins=80)
@@ -66,15 +77,6 @@ if __name__ == '__main__':
     # print(len(df.index))
     # print(df.index)
 
-    # cell_id = sorted(cell_id)
-    count = Counter(df["spike_order"])
-    keys = list(key for key in count.keys())
-    values = list(value for value in count.values())
-    count = {}
-    for i in range(len(keys)):
-        count[keys[i]] = int(values[i] / keys[i])
-
-    print(count)
     # print(count.keys())
     # print(keys)
     # print(count.values())
