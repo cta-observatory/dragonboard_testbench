@@ -29,7 +29,7 @@ def calibrate(event):
 def store(data):
     """Store acquired data in pieces of max_data_size"""
     file = os.path.join(args['<outpath>'], '{}_calib.pickle'.format(os.path.basename(args['<inputfile>'])))
-    max_data_size = 10000
+    max_data_size = 10
 
     for i in range(int(len(data) / max_data_size)):
         try:
@@ -42,14 +42,13 @@ def store(data):
                     break
         except:
             pass
-        f = open(file, "wb")
-        try:
-            for data_item in calib_data:
-                pickle.dump(data_item, f)
-        except:
-            pass
-        pickle.dump(data[i * max_data_size:(i + 1) * max_data_size], f)
-        f.close()
+        with open(file, "wb") as f:
+            try:
+                for data_item in calib_data:
+                    pickle.dump(data_item, f)
+            except:
+                pass
+            pickle.dump(data[i * max_data_size:(i + 1) * max_data_size], f)
 
 
 if __name__ == '__main__':
@@ -61,7 +60,7 @@ if __name__ == '__main__':
 
     events = EventGenerator(
         args['<inputfile>'],
-        max_events=(int(args['-m']) + int(args['-s'])) if args['-m'] else None,
+        max_events=int(args['-m']) if args['-m'] else None,
     )
 
     for i in range(int(args['-s'])):
