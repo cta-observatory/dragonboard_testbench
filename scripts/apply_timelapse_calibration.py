@@ -29,7 +29,7 @@ def calibrate(event):
 def store(data):
     """Store acquired data in pieces of max_data_size"""
     file = os.path.join(args['<outpath>'], '{}_calib.pickle'.format(os.path.basename(args['<inputfile>'])))
-    max_data_size = 10
+    max_data_size = 10000
 
     for i in range(int(len(data) / max_data_size)):
         try:
