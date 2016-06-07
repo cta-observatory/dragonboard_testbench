@@ -23,6 +23,7 @@ setup(
             'dragonboard_fakedata = dragonboard.tools.create_fake_data:main',
             'dragonboard_calc_calib_constants = dragonboard.tools.calc_calib_constants:main',
             'dragonboard_dataextraction = dragonboard.tools.dataextraction:main',
+            'calc_timelapse_constants = dragonboard.tools.calc_timelapse_constants:main',
         ]
     }
 )
