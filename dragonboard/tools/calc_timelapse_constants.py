@@ -4,8 +4,8 @@ Usage:
 
 Options:
   --max_events N    integer; maximum events to be used from a file. default is all.
-  --skip_begin N    integer; number of start-samples to be skipped for fitting [default: 9]
-  --skip_end N      integer; number of end-samples to be skipped for fitting [default: 2]
+  --skip_begin N    integer; number of start-samples to be skipped for fitting [default: 5]
+  --skip_end N      integer; number of end-samples to be skipped for fitting [default: 5]
   --do_channel8     fit also channel 8 values
 '''
 
