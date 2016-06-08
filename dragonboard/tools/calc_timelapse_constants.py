@@ -38,6 +38,13 @@ def f(x, a, b, c):
 
 
 def fit(adc, delta_t, cell):
+    a0 = 1.3
+    b0 = -0.38
+    c0 = 0
+
+    if not len(adc):
+        return a0, b0, c0, np.nan
+
     big_time = np.percentile(delta_t, 75)
     p0 = [
         1.3,
@@ -51,9 +58,9 @@ def fit(adc, delta_t, cell):
             adc,
             p0=p0,
         )
-    except RuntimeError:
+    except (RuntimeError, TypeError):
         logging.error('Could not fit cell {}'.format(cell))
-        return np.full(4, np.nan)
+        return p0[0], p0[1], p0[2], np.nan
 
     ndf = len(adc) - 3
     residuals = adc - f(delta_t, a, b, c)
@@ -107,10 +114,10 @@ def main():
                 data = event.data[pixel][gain][skip_slice]
                 delta_ts = event.time_since_last_readout[pixel][gain][skip_slice]
                 for i, cid in enumerate(cell_ids):
-                    delta_t[pixel, gain][cid].append(delta_ts[i])            
+                    delta_t[pixel, gain][cid].append(delta_ts[i])
                     adc[pixel, gain][cid].append(data[i])
 
-    for key in sorted(adc.keys():
+    for key in sorted(adc.keys()):
         # adc and delta_t have the same keys
         for i in tqdm(range(4096), desc=str(key)):
             adc[key][i] = np.array(adc[key][i], dtype=adc[key][i].typecode)
