@@ -94,7 +94,7 @@ class DragonBrowser(QtGui.QMainWindow):
         for channel in range(self.n_channels):
             for gain in self.gains:
                 plot, = self.axs[gain].plot(
-                    [], [], '_', ms=10, mew=1, label='Ch{}'.format(channel)
+                    [], [], '.:', ms=10, mew=1, label='Ch{}'.format(channel)
                 )
                 plot.set_visible(False)
                 self.plots[gain][channel] = plot
