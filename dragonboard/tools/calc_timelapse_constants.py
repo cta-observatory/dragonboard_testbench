@@ -31,6 +31,8 @@ import dragonboard as dr
 logging.basicConfig(level=logging.DEBUG)
 
 
+from array import array
+
 def f(x, a, b, c):
     return a * x ** b + c
 
@@ -67,18 +69,28 @@ def main():
     args["--do_channel8"] = bool(args["--do_channel8"])
     store = pd.HDFStore(args['<outputfile>'], 'w')
 
-
-    print("reading raw file(s) into memory:")
-    egs = [dr.EventGenerator(filename, max_events=args["--max_events"]) for filename in args["<inputfiles>"]]
-
     adc = {}
     delta_t = {}
     for pixel in range(8 if args["--do_channel8"] else 7):
         for gain in ["high", "low"]:
-            adc[pixel, gain] = [[] for i in range(4096)]
-            delta_t[pixel, gain] = [[] for i in range(4096)]
-    
-    for eg in egs:
+            adc[pixel, gain] = [array('H') for i in range(4096)]
+            delta_t[pixel, gain] = [array('f') for i in range(4096)]
+    if not args["--do_channel8"]:
+        # We need to put nans for channel 8 into the output file, since the 
+        # rest of the system expects this data to be there ... even if it its nan.
+        result = pd.DataFrame( np.full((4096, 4), np.nan),
+            columns=['a', 'b', 'c', 'chisq_ndf']
+        )
+        result['pixel'] = 7
+        result['channel'] = "high"
+        result['cell'] = np.arange(4096)
+        store.append('data', result, min_itemsize={'channel': 4})
+
+        result['channel'] = "low"
+        store.append('data', result, min_itemsize={'channel': 4})
+
+    print("reading raw file(s) into memory:")
+    for eg in [dr.EventGenerator(filename, max_events=args["--max_events"]) for filename in args["<inputfiles>"]]:
         sample_ids = np.arange(eg.roi)
 
         for event in tqdm(
@@ -89,39 +101,28 @@ def main():
                 ):
 
             for pixel, gain in sorted(adc.keys()):
-
                 sc = event.header.stop_cells[pixel][gain]
-                cell_ids = dr.sample2cell(sample_ids, sc)
-                
                 skip_slice = slice(args["--skip_begin"], -args["--skip_end"])
-                cell_ids = cell_ids[skip_slice]
+                cell_ids = dr.sample2cell(sample_ids, sc)[skip_slice]
                 data = event.data[pixel][gain][skip_slice]
                 delta_ts = event.time_since_last_readout[pixel][gain][skip_slice]
                 for i, cid in enumerate(cell_ids):
                     delta_t[pixel, gain][cid].append(delta_ts[i])            
                     adc[pixel, gain][cid].append(data[i])
-    """
-    for key in adc:
-        for i in range(len(adc[key])):
-            print(key, i, len(adc[key][i]))
-    """
-    print("converting lists to numpy arrays:")
-    for key in tqdm(iterable=sorted(adc.keys()),
-                    leave=True):
+
+    for key in sorted(adc.keys():
         # adc and delta_t have the same keys
         for i in tqdm(range(4096), desc=str(key)):
-            adc[key][i] = np.array(adc[key][i], dtype=np.int16)
-            delta_t[key][i] = np.array(delta_t[key][i], dtype=np.float32)
+            adc[key][i] = np.array(adc[key][i], dtype=adc[key][i].typecode)
+            delta_t[key][i] = np.array(delta_t[key][i], dtype=delta_t[key][i].typecode)
 
             adc[key][i] = adc[key][i][~np.isnan(delta_t[key][i])]
             delta_t[key][i] = delta_t[key][i][~np.isnan(delta_t[key][i])]
 
 
-
     print("fitting")
     pool = Parallel(max(psutil.cpu_count()-1, 1))
-    for key in tqdm(iterable=sorted(adc.keys()),
-                    leave=True):
+    for key in tqdm(iterable=sorted(adc.keys()), leave=True):
         result = pd.DataFrame(
             pool(delayed(fit)(adc[key][i], delta_t[key][i], i) for i in range(4096)),
             columns=['a', 'b', 'c', 'chisq_ndf']
@@ -132,36 +133,6 @@ def main():
         result['cell'] = np.arange(4096)
 
         store.append('data', result, min_itemsize={'channel': 4})
-
-    if not args["--do_channel8"]:
-        # We need to put nans for channel 8 into the output file, since the 
-        # rest of the system expects this data to be there ... even if it its nan.
-
-        result = pd.DataFrame( np.full((4096, 4), np.nan),
-            columns=['a', 'b', 'c', 'chisq_ndf']
-        )
-        pixel = 7
-        channel = "high"
-        result['pixel'] = pixel
-        result['channel'] = channel
-        result['cell'] = np.arange(4096)
-
-        store.append('data', result, min_itemsize={'channel': 4})
-
-
-        result = pd.DataFrame( np.full((4096, 4), np.nan),
-            columns=['a', 'b', 'c', 'chisq_ndf']
-        )
-        pixel = 7
-        channel = "low"
-        result['pixel'] = pixel
-        result['channel'] = channel
-        result['cell'] = np.arange(4096)
-
-
-        store.append('data', result, min_itemsize={'channel': 4})
-
-
 
 if __name__ == '__main__':
     main()
