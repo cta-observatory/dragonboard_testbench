@@ -15,6 +15,45 @@ def read_calib_constants(filepath):
         ['pixel', 'channel', 'cell']
     ).sort_index()
 
+class TakaOffsetCalibration:
+
+    def __init__(self, filename):
+        self.roi = None
+        table = np.genfromtxt(filename)
+        assert table.shape == (4096, 16)
+        table = table.astype('i4')
+        self.offsets = np.zeros(
+            8,
+            dtype=[
+                ("low", 'i4', 4096),
+                ("high", 'i4', 4096),
+            ]
+        )
+        for i in range(8):
+            self.offsets["high"][i] = table[:, i]
+            self.offsets["low"][i] = table[:, i + 8]
+
+
+    def __call__(self, event):
+        ''' calibrate data in event '''
+        event = deepcopy(event)
+
+        if self.roi is None:
+            self.roi = event.roi
+            self.sample = np.arange(event.roi)
+
+        assert self.roi == event.roi
+
+        for pixel in range(len(event.data)):
+            for channel in event.data.dtype.names:
+                sc = event.header.stop_cells[pixel][channel]
+                cells = sample2cell(self.sample, sc)
+
+                event.data[pixel][channel] -= self.offsets[pixel][channel][cells]
+
+        return event
+
+
 
 class TimelapseCalibration:
     ''' Performs timelapse correction of measured data of
