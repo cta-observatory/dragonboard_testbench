@@ -2,7 +2,7 @@ from setuptools import setup
 
 setup(
     name='dragonboard',
-    version='0.0.4',
+    version='0.0.5',
     description='A reader library for the cta dragonboard data',
     url='http://github.com/cta-observatory/dragonboard_testbench',
     author='Kai Brügge, Mario Hörbe, Dominik Neise, Maximilian Nöthe',
@@ -23,6 +23,7 @@ setup(
             'dragonboard_fakedata = dragonboard.tools.create_fake_data:main',
             'dragonboard_calc_calib_constants = dragonboard.tools.calc_calib_constants:main',
             'dragonboard_dataextraction = dragonboard.tools.dataextraction:main',
+            'calc_timelapse_constants = dragonboard.tools.calc_timelapse_constants:main',
         ]
     }
 )

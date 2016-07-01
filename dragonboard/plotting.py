@@ -249,7 +249,7 @@ class DragonBrowser(QtGui.QMainWindow):
                     if self.is_channel_active[channel].isChecked():
                         stop_cell = self.dragon_event.header.stop_cells[channel][gain]
                         data = self.dragon_event.data[gain][channel]
-                        func(channel, gain, data, stop_cell, self.axs[gain])
+                        func(channel=channel, gain=gain, data=data, stop_cell=stop_cell, axis=self.axs[gain])
 
             self.analysis_output.setPlainText(mystdout.getvalue())
         finally:
