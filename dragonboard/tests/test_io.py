@@ -34,9 +34,9 @@ def test_performance_v5_1_05():
 
     assert len(events) == 100
 
+
 def test_performance_v5_1_0B():
     from ..io import read
     events = read('data/random_noise_v5_1_0B.dat')
 
     assert len(events) == 100
-

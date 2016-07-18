@@ -12,6 +12,7 @@ Options:
 '''
 import numpy as np
 import struct
+from tqdm import tqdm
 from docopt import docopt
 
 
@@ -65,12 +66,34 @@ def write_stop_cells(f, stop_cells):
     stop_cells.tofile(f)
 
 
-def create_noise_file(filename, version='v5_1_0B', num_events=100, mean=100, std=5):
+def create_noise_file(
+        filename,
+        version='v5_1_0B',
+        num_events=100,
+        mean=100,
+        std=5,
+        freq=1e4,
+        ):
+    '''
+    Create a dragonboard file containing only white noise.
+    Times between events follow a exponential distribution (pseudo poissonian trigger)
+
+    Args:
+        filename (str): name of the outputfile
+
+    Kwargs:
+        version (str): dragonfile version, either "v5_1_05" or "v5_1_0B"
+        num_events (int): number of events to create
+        mean (number): mean of the signal (aka offset)
+        std (number): standard deviation of the signal, amount of noise
+        freq (number): mean trigger frequency
+    '''
 
     assert version in ('v5_1_0B', 'v5_1_05'), 'Unsupported Version: {}'.format(version)
 
+    t = 0
     with open(filename, 'wb') as f:
-        for event_counter in range(num_events):
+        for event_counter in tqdm(range(num_events)):
 
             if version == 'v5_1_0B':
                 write_header_v5_1_0B(
@@ -78,19 +101,21 @@ def create_noise_file(filename, version='v5_1_0B', num_events=100, mean=100, std
                     pps_counter=0,
                     event_counter=event_counter,
                     trigger_counter=0,
-                    counter_10MHz=event_counter * 1000,
-                    counter_133MHz=event_counter * 13300,
+                    counter_10MHz=int(t * 10e6),
+                    counter_133MHz=int(t * 133e6),
                 )
             elif version == 'v5_1_05':
                 write_header_v5_1_05(
                     f,
                     event_counter=event_counter,
                     trigger_counter=0,
-                    clock=event_counter * 1000,
+                    clock=int(t * 10e6),
                 )
 
             write_stop_cells(f, np.zeros(8))
             write_adc_data(f, np.random.normal(mean, std, 16 * 1024))
+
+            t += np.random.exponential(1/freq)
 
 
 def main():
