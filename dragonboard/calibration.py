@@ -15,6 +15,7 @@ def read_calib_constants(filepath):
         ['pixel', 'channel', 'cell']
     ).sort_index()
 
+
 class TakaOffsetCalibration:
 
     def __init__(self, filename):
@@ -32,7 +33,6 @@ class TakaOffsetCalibration:
         for i in range(8):
             self.offsets["high"][i] = table[:, i]
             self.offsets["low"][i] = table[:, i + 8]
-
 
     def __call__(self, event):
         ''' calibrate data in event '''
@@ -52,7 +52,6 @@ class TakaOffsetCalibration:
                 event.data[pixel][channel] -= self.offsets[pixel][channel][cells]
 
         return event
-
 
 
 class TimelapseCalibration:
@@ -225,7 +224,7 @@ class TimelapseCalibrationExtraOffsets:
 
         for pixel in range(len(event.data)):
             for gain in event.data.dtype.names:
-                gain_id = {'high':0, 'low':1}[gain]
+                gain_id = {'high': 0, 'low': 1}[gain]
                 sc = event.header.stop_cells[pixel][gain]
                 cells = sample2cell(self.sample, sc)
 
@@ -264,7 +263,7 @@ class MedianTimelapseExtraOffsets:
 
         for pixel in range(len(event.data)):
             for gain in event.data.dtype.names:
-                gain_id = {'high':0, 'low':1}[gain]
+                gain_id = {'high': 0, 'low': 1}[gain]
                 sc = event.header.stop_cells[pixel][gain]
                 cells = sample2cell(self.sample, sc)
 
@@ -272,5 +271,36 @@ class MedianTimelapseExtraOffsets:
                 delta_t_offset = self.offset(dt).astype('>i2')
                 extra_offset = self.offsets[pixel, gain_id, cells, self.sample].astype('>i2')
                 event.data[pixel][gain] -= delta_t_offset + extra_offset
+
+        return event
+
+
+class PatternSubtraction:
+    def __init__(self, pattern_file):
+        self.pattern_data = (
+            pd.read_hdf(pattern_file)
+            .reset_index()
+            .set_index(['pixel', 'channel', 'cell'])
+            .sort_index()
+        )['mean']
+        self.roi = None
+
+    def __call__(self, event):
+        ''' calibrate data in event '''
+        event = deepcopy(event)
+
+        if self.roi is None:
+            self.roi = event.roi
+            self.sample = np.arange(event.roi)
+
+        assert self.roi == event.roi
+
+        for pixel in range(len(event.data) - 1):
+            for gain in event.data.dtype.names:
+                sc = event.header.stop_cells[pixel][gain]
+                cells = sample2cell(self.sample, sc)
+
+                offset = self.pattern_data.loc[pixel, gain].values[cells]
+                event.data[pixel][gain] -= offset.astype('>i2')
 
         return event
