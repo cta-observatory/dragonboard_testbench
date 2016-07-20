@@ -24,7 +24,11 @@ if __name__ == '__main__':
                     )
                     df = df[df['sample'] <= 10]
 
-                    mean = df.groupby(['cell', 'sample'])['adc_counts'].mean()
+                    mean = df.groupby(['cell', 'sample'])['adc_counts'].agg(
+                        ['mean', 'std']
+                    )
+                    mean['pixel'] = pixel
+                    mean['channel'] = channel
 
-                    store.append('pixel_{}_{}'.format(pixel, channel), mean)
+                    store.append('data', mean, min_itemsize={'channel': 4})
                     pbar.update(1)
