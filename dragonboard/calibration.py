@@ -291,7 +291,7 @@ class PatternSubtraction:
 
         if self.roi is None:
             self.roi = event.roi
-            self.sample = np.arange(event.roi)
+            self.sample = np.arange(event.roi)[:10]
 
         assert self.roi == event.roi
 
@@ -301,6 +301,6 @@ class PatternSubtraction:
                 cells = sample2cell(self.sample, sc)
 
                 offset = self.pattern_data.loc[pixel, gain].values[cells]
-                event.data[pixel][gain] -= offset.astype('>i2')
+                event.data[pixel][gain][:10] -= np.round(offset).astype('>i2')
 
         return event
