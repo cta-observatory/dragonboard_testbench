@@ -280,9 +280,9 @@ class PatternSubtraction:
         self.pattern_data = (
             pd.read_hdf(pattern_file)
             .reset_index()
-            .set_index(['pixel', 'channel', 'cell'])
+            .set_index(['pixel', 'channel', 'cell', 'sample'])
             .sort_index()
-        )['mean']
+        )['mean'].values.reshape(7, 2, 4096, 11)
         self.roi = None
 
     def __call__(self, event):
@@ -297,10 +297,11 @@ class PatternSubtraction:
 
         for pixel in range(len(event.data) - 1):
             for gain in event.data.dtype.names:
+                gain_id = {'high': 0, 'low': 1}[gain]
                 sc = event.header.stop_cells[pixel][gain]
                 cells = sample2cell(self.sample, sc)
 
-                offset = self.pattern_data.loc[pixel, gain].values[cells]
+                offset = self.pattern_data[pixel, gain_id, cells, self.sample]
                 event.data[pixel][gain][:10] -= np.round(offset).astype('>i2')
 
         return event
