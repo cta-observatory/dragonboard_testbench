@@ -201,15 +201,6 @@ class AbstractEventGenerator(object):
             # even though they were not digitized.
             # c.f. https://www.dropbox.com/s/dub2rrydllkqyl5/DRSreadoutproc.pptx?dl=0
             if p % 2 == 0:
-                #if 0 <= sc_1024 < 767:
-                #    self.last_seen[g][p][sc:sc+stopcell_readout_window_length] = now
-                """
-                if 767 <= sc_1024 <= 1024 - self.roi:
-                    self.last_seen[g][p][(sc+1024)%max_roi:(sc+1024)%max_roi+stopcell_readout_window_length] = now
-                elif (1024 - self.roi < sc_1024 <= 1024 - stopcell_readout_window_length) or (sc_1024 > 1024 - stopcell_readout_window_length):
-                    self.last_seen[g][p][(sc+1024)%max_roi:(sc+1024)%max_roi+stopcell_readout_window_length] = now
-                    self.last_seen[g][p][sc_channel * 1024] = now
-                """
                 if sc_1024 >= 767:
                     self.last_seen[g][p][(sc+1024)%max_roi:(sc+1024)%max_roi+stopcell_readout_window_length] = now
                 if sc_1024 > 1024 - self.roi:
