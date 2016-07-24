@@ -37,6 +37,22 @@ Event = namedtuple(
 )
 
 
+def assign_from_rolled_source(source, destination, roll_by):
+    """ do the same as 
+    destination = np.roll(source, -roll_by)[:self.roi]
+    just quicker
+    """
+    length = len(destination)
+    normal_chunk = source[roll_by : roll_by + length]
+    N = len(normal_chunk)
+    destination[:N] = normal_chunk
+    missing = length - N
+    if missing:
+        extra_chunk = source[:missing]
+        destination[N:] = extra_chunk
+
+    return destination
+
 def read(path, max_events=None):
     ''' return list of Events in file path '''
     return list(EventGenerator(path, max_events=None))
@@ -151,6 +167,9 @@ class AbstractEventGenerator(object):
         return self.next()
 
     def _update_last_seen(self, event_header):
+        stopcell_readout_window_length = 12
+        assert self.roi >= stopcell_readout_window_length
+
         time_since_last_readout = np.full(
             num_channels,
             np.nan,
@@ -162,22 +181,33 @@ class AbstractEventGenerator(object):
         if self._alarm_previous_was_called:
             return time_since_last_readout
 
+        now = event_header.timestamp
+
         for g, p in stop_cell_map:
             sc = event_header.stop_cells[g][p]
+            sc_1024 = sc % 1024
+            sc_channel = sc / 1024
 
-            #time_since_last_readout[g][p] = np.roll(self.last_seen[g][p], -sc)[:self.roi]
-            normal_chunk = self.last_seen[g][p][sc : sc + self.roi]
-            N = len(normal_chunk)
-            time_since_last_readout[g][p][:N] = normal_chunk
-            missing = self.roi - N
-            if missing:
-                extra_chunk = self.last_seen[g][p][:missing]
-                time_since_last_readout[g][p][N:] = extra_chunk
+            assign_from_rolled_source(
+                destination=time_since_last_readout[g][p],
+                source=now - self.last_seen[g][p],
+                roll_by=sc)
 
-            time_since_last_readout[g][p] = event_header.timestamp - time_since_last_readout[g][p]
+            # Under certain conditions cells get clocked out of the DRS but are not digitized,
+            # this is a side effect of reading out the stopcell position.
+            # Often this coincides with cells, which are digitized anyway,
+            # but sometimes additional cells are clocked out, 
+            # so their "last_seen" needs to be set to "now"
+            # even though they were not digitized.
+            # c.f. https://www.dropbox.com/s/dub2rrydllkqyl5/DRSreadoutproc.pptx?dl=0
+            if p % 2 == 0:
+                if sc_1024 >= 767:
+                    self.last_seen[g][p][(sc+1024)%max_roi:(sc+1024)%max_roi+stopcell_readout_window_length] = now
+                if sc_1024 > 1024 - self.roi:
+                    self.last_seen[g][p][sc_channel * 1024] = now
 
             cells = (np.arange(self.roi) + sc) % max_roi
-            self.last_seen[g][p][cells] = event_header.timestamp
+            self.last_seen[g][p][cells] = now
 
         return time_since_last_readout
 
