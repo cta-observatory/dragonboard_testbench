@@ -405,7 +405,7 @@ class EventGenerator_v5_1_0B(AbstractEventGenerator):
 
         data_header = b'\xdd' * 8
         first_data_header = chunk.find(data_header)
-        second_data_header = chunk.find(data_header, first_data_header + 1)
+        second_data_header = chunk.find(data_header, first_data_header + 8)
 
         event_size = second_data_header - first_data_header
         f.seek(current_position)
