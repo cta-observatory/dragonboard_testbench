@@ -413,26 +413,71 @@ class EventGenerator_v5_1_0B(AbstractEventGenerator):
         return event_size
 
 
-version_map = {
-    "v5_1_05": EventGenerator_v5_1_05,
-    "v5_1_0B": EventGenerator_v5_1_0B,
-}
-
-
 def EventGenerator(path, max_events=None, version=None):
+    version_map = {
+        "v5_1_05": EventGenerator_v5_1_05,
+        "v5_1_0B": EventGenerator_v5_1_0B,
+    }
+
+    def guess_version(path):
+        for version_name in version_map:
+            EG = version_map[version_name]
+            try:
+                EG(path)
+                return version_name
+            except:
+                pass
+        raise IOError(
+            'File version could not be determined for file {}'.format(path))
+
     if version is None:
         return version_map[guess_version(path)](path, max_events)
     else:
         return version_map[version](path, max_events)
 
 
-def guess_version(path):
-    for version_name in version_map:
-        EG = version_map[version_name]
-        try:
-            EG(path)
-            return version_name
-        except:
-            pass
-    raise IOError(
-        'File version could not be determined for file {}'.format(path))
+class AbstractEventHeaderGenerator(AbstractEventGenerator):
+    def next(self):
+        return super().next()
+
+    def read_adc_data(self):
+        ''' read data from self.file_descripter, and throw it away.
+        '''
+        f = self.file_descriptor
+        f.seek(num_gains * num_channels * self.roi * 2, 1)
+        return None
+
+    def _update_last_seen(self, event_header):
+        return None
+
+class EventHeaderGenerator_v5_1_05(AbstractEventHeaderGenerator, EventGenerator_v5_1_05):
+    pass
+
+class EventHeaderGenerator_v5_1_0B(AbstractEventHeaderGenerator, EventGenerator_v5_1_0B):
+    pass
+
+def EventHeaderGenerator(path, max_events=None, version=None):
+    version_map = {
+        "v5_1_05": EventHeaderGenerator_v5_1_05,
+        "v5_1_0B": EventHeaderGenerator_v5_1_0B,
+    }
+
+    def guess_version(path):
+        for version_name in version_map:
+            EG = version_map[version_name]
+            try:
+                EG(path)
+                return version_name
+            except:
+                pass
+        raise IOError(
+            'File version could not be determined for file {}'.format(path))
+
+    if version is None:
+        return version_map[guess_version(path)](path, max_events)
+    else:
+        return version_map[version](path, max_events)
+
+
+
+
