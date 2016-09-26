@@ -15,6 +15,7 @@ git clone http://github.com/cta-observatory/dragonboard_testbench
 pip install -e dragonboard_testbench
 ```
 
+#### Troubles on MacOS
 If you get an error while installing due to the `tables` dependency on MacOS you might have to install
 it via conda manually first
 
