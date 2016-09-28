@@ -6,7 +6,18 @@ A collection of programs to help with DRS4 calibration of the LST test data of t
 
 ## Installation
 
-`pip install git+https://github.com/cta-observatory/dragonboard_testbench`
+The easiest way to install this is to use the (Python Conda Distribution)[https://www.continuum.io/downloads].
+Once installed you can install some dependencies using
+
+```
+conda install numpy scipy pandas matplotlib pytables pyqt=4.11
+```
+
+Now you can install the `dragonboard_testbench` by using *pip*
+
+```
+pip install git+https://github.com/cta-observatory/dragonboard_testbench
+```
 
 or, if you are developing
 
@@ -15,22 +26,6 @@ git clone http://github.com/cta-observatory/dragonboard_testbench
 pip install -e dragonboard_testbench
 ```
 
-#### Troubles on MacOS
-If you get an error while installing due to the `tables` dependency on MacOS you might have to install
-it via conda manually first
-
-```
-conda install pytables
-```
-
-If you don't use conda you can install the hdf5 library first using HomeBrew
-
-```
-brew tap homebrew/science
-brew install hdf5
-```
-
-See also [github.com/PyTables/PyTables#installation](github.com/PyTables/PyTables#installation)
 ## Usage
 
 
