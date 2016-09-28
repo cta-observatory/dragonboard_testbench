@@ -74,7 +74,16 @@ def main():
     args["--skip_begin"] = int(args["--skip_begin"])
     args["--skip_end"] = int(args["--skip_end"])
     args["--do_channel8"] = bool(args["--do_channel8"])
+    print(args['<outputfile>'])
+    if os.path.isfile(args['<outputfile>']):
+        answer = input('Outputfile {} exists. Do you want to overwrite? y/[n] '.format(args['<outputfile>']))
+        if not answer.lower().startswith('y'):
+            sys.exit()
+
+
     store = pd.HDFStore(args['<outputfile>'], 'w')
+
+
 
     adc = {}
     delta_t = {}
@@ -83,7 +92,7 @@ def main():
             adc[pixel, gain] = [array('H') for i in range(4096)]
             delta_t[pixel, gain] = [array('f') for i in range(4096)]
     if not args["--do_channel8"]:
-        # We need to put nans for channel 8 into the output file, since the 
+        # We need to put nans for channel 8 into the output file, since the
         # rest of the system expects this data to be there ... even if it its nan.
         result = pd.DataFrame( np.full((4096, 4), np.nan),
             columns=['a', 'b', 'c', 'chisq_ndf']
