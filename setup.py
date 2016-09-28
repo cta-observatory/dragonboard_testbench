@@ -17,7 +17,6 @@ setup(
         'joblib',
         'docopt',
         'psutil',
-        'tables',
     ],
     packages=['dragonboard', 'dragonboard.tools'],
     entry_points={
