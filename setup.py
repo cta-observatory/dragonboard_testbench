@@ -6,7 +6,7 @@ setup(
     description='A reader library for the cta dragonboard data',
     url='http://github.com/cta-observatory/dragonboard_testbench',
     author='Kai Brügge, Mario Hörbe, Dominik Neise, Maximilian Nöthe',
-    author_email='kai.bruegge@tu-dortmund.de',
+    author_email='maximilian.noethe@tu-dortmund.de, kai.bruegge@tu-dortmund.de, dominik.neise@tu-dortmund.de',
     license='MIT',
     install_requires=[
         'numpy',
@@ -15,6 +15,8 @@ setup(
         'pandas',
         'tqdm',
         'joblib',
+        'docopt',
+        'psutil',
     ],
     packages=['dragonboard', 'dragonboard.tools'],
     entry_points={
