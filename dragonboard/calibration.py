@@ -11,7 +11,7 @@ class NoCalibration:
 
 
 def read_calib_constants(filepath):
-    return pd.read_hdf(filepath).drop('chisq_ndf', axis=1).set_index(
+    return pd.read_hdf(filepath).set_index(
         ['pixel', 'channel', 'cell']
     ).sort_index()
 
