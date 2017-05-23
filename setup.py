@@ -17,7 +17,6 @@ setup(
         'joblib',
         'docopt',
         'psutil',
-        'PyQt5',
     ],
     packages=['dragonboard', 'dragonboard.tools'],
     entry_points={
