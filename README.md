@@ -10,7 +10,7 @@ The easiest way to install this is to use the (Python Conda Distribution)[https:
 Once installed you can install some dependencies using
 
 ```
-conda install numpy scipy pandas matplotlib pytables pyqt=4.11
+conda install numpy scipy pandas matplotlib pytables pyqt=5
 ```
 
 Now you can install the `dragonboard_testbench` by using *pip*
