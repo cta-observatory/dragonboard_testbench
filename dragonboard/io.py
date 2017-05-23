@@ -1,6 +1,3 @@
-''' Read Dragon Board Data '''
-
-from __future__ import division, print_function, absolute_import
 import struct
 import numpy as np
 from collections import namedtuple
@@ -38,7 +35,7 @@ Event = namedtuple(
 
 
 def assign_from_rolled_source(source, destination, roll_by):
-    """ do the same as 
+    """ do the same as
     destination = np.roll(source, -roll_by)[:self.roi]
     just quicker
     """
@@ -186,7 +183,7 @@ class AbstractEventGenerator(object):
         for g, p in stop_cell_map:
             sc = event_header.stop_cells[g][p]
             sc_1024 = sc % 1024
-            sc_channel = sc / 1024
+            sc_channel = sc // 1024
 
             assign_from_rolled_source(
                 destination=time_since_last_readout[g][p],
@@ -196,7 +193,7 @@ class AbstractEventGenerator(object):
             # Under certain conditions cells get clocked out of the DRS but are not digitized,
             # this is a side effect of reading out the stopcell position.
             # Often this coincides with cells, which are digitized anyway,
-            # but sometimes additional cells are clocked out, 
+            # but sometimes additional cells are clocked out,
             # so their "last_seen" needs to be set to "now"
             # even though they were not digitized.
             # c.f. https://www.dropbox.com/s/dub2rrydllkqyl5/DRSreadoutproc.pptx?dl=0
@@ -239,8 +236,8 @@ class AbstractEventGenerator(object):
         array = np.empty(
             num_channels, dtype=[('low', roi_dtype), ('high', roi_dtype)]
         )
-        data_odd = d[N / 2:]
-        data_even = d[:N / 2]
+        data_odd = d[N // 2:]
+        data_even = d[:N // 2]
         for channel in range(0, num_channels, 2):
             array['high'][channel] = data_even[channel::8]
             array['low'][channel] = data_even[channel + 1::8]
