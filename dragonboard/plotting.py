@@ -1,8 +1,8 @@
 from __future__ import division, print_function, absolute_import
 import numpy as np
-from PyQt4 import QtCore, QtGui
-from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg
-from matplotlib.backends.backend_qt4 import NavigationToolbar2QT
+from PyQt5 import QtCore, QtWidgets, QtWidgets
+from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg
+from matplotlib.backends.backend_qt5 import NavigationToolbar2QT
 from matplotlib.figure import Figure
 from collections import defaultdict
 from functools import partial
@@ -33,18 +33,18 @@ class FigureCanvas(FigureCanvasQTAgg):
         self.setParent(parent)
         FigureCanvas.setSizePolicy(
             self,
-            QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Expanding,
+            QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding,
         )
         FigureCanvas.updateGeometry(self)
 
 
-class DragonBrowser(QtGui.QMainWindow):
+class DragonBrowser(QtWidgets.QMainWindow):
     def __init__(self, filename=None, calibfile=None, extra_offset_file=None, start=None, **kwargs):
-        QtGui.QMainWindow.__init__(self, **kwargs)
+        QtWidgets.QMainWindow.__init__(self, **kwargs)
 
         self.setWindowTitle('DragonBrowser')
 
-        self.filename = filename or QtGui.QFileDialog.getOpenFileName(
+        self.filename = filename or QtWidgets.QFileDialog.getOpenFileName(
                 self, 'Open file', os.environ['HOME']
             )
         if not self.filename:
@@ -83,9 +83,9 @@ class DragonBrowser(QtGui.QMainWindow):
         self.toolbar = self.addToolBar('Test')
         self.toolbar.addWidget(self.navbar)
 
-        bottom_frame = QtGui.QFrame()
-        layout = QtGui.QHBoxLayout(bottom_frame)
-        self.text = QtGui.QLineEdit(bottom_frame)
+        bottom_frame = QtWidgets.QFrame()
+        layout = QtWidgets.QHBoxLayout(bottom_frame)
+        self.text = QtWidgets.QLineEdit(bottom_frame)
         self.text.setReadOnly(True)
         self.text.setFocusPolicy(QtCore.Qt.NoFocus)
         layout.addWidget(self.text)
@@ -99,7 +99,7 @@ class DragonBrowser(QtGui.QMainWindow):
                 plot.set_visible(False)
                 self.plots[gain][channel] = plot
 
-            button = QtGui.QPushButton(bottom_frame)
+            button = QtWidgets.QPushButton(bottom_frame)
             button.setStyleSheet('background-color: rgb({}, {}, {});'.format(
                 *mpl2rgb(plot.get_color())
             ))
@@ -109,7 +109,7 @@ class DragonBrowser(QtGui.QMainWindow):
             button.setFocusPolicy(QtCore.Qt.NoFocus)
             layout.addWidget(button)
 
-            cb = QtGui.QCheckBox(str(channel), bottom_frame)
+            cb = QtWidgets.QCheckBox(str(channel), bottom_frame)
             cb.setFocusPolicy(QtCore.Qt.NoFocus)
             cb.stateChanged.connect(
                 partial(self.toggle_channel, channel=channel)
@@ -118,19 +118,19 @@ class DragonBrowser(QtGui.QMainWindow):
                 cb.toggle()
             layout.addWidget(cb)
 
-        cb = QtGui.QCheckBox('Rescale', bottom_frame)
+        cb = QtWidgets.QCheckBox('Rescale', bottom_frame)
         cb.setFocusPolicy(QtCore.Qt.NoFocus)
         cb.toggle()
         layout.addWidget(cb)
         self.rescale_box = cb
 
-        cb = QtGui.QCheckBox('Show Cell ID', bottom_frame)
+        cb = QtWidgets.QCheckBox('Show Cell ID', bottom_frame)
         cb.setFocusPolicy(QtCore.Qt.NoFocus)
         cb.stateChanged.connect(self.update)
         layout.addWidget(cb)
         self.cb_physical = cb
 
-        button = QtGui.QPushButton(bottom_frame)
+        button = QtWidgets.QPushButton(bottom_frame)
         button.clicked.connect(self.next_event)
         button.setFocusPolicy(QtCore.Qt.NoFocus)
         button.setText('Next Event')
@@ -145,7 +145,7 @@ class DragonBrowser(QtGui.QMainWindow):
         self.update()
 
     def changeColor(self, channel, button):
-        diag = QtGui.QColorDialog(self)
+        diag = QtWidgets.QColorDialog(self)
         color = diag.getColor().name()
         button.setStyleSheet('background-color: {}'.format(color))
 

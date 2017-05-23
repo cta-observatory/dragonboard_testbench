@@ -9,19 +9,19 @@ Options:
 '''
 import matplotlib
 import matplotlib.style
-matplotlib.use('Qt4Agg')
+matplotlib.use('Qt5Agg')
 import sys
 import signal
 from docopt import docopt
 from .plotting import DragonBrowser
 
-from PyQt4 import QtGui
-from PyQt4 import QtCore
+from PyQt5 import QtWidgets
+from PyQt5 import QtCore
 
 
 def sigint_handler(*args):
     sys.stderr.write('\rReceived SIGINT, terminating\n')
-    QtGui.QApplication.instance().quit()
+    QtWidgets.QApplication.instance().quit()
 
 
 def main():
@@ -30,7 +30,7 @@ def main():
     except NameError:
         pass
     args = docopt(__doc__)
-    qApp = QtGui.QApplication(sys.argv)
+    qApp = QtWidgets.QApplication(sys.argv)
     signal.signal(signal.SIGINT, sigint_handler)
 
     widget = DragonBrowser(
