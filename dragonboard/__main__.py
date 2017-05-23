@@ -10,6 +10,7 @@ Options:
 import matplotlib
 import matplotlib.style
 matplotlib.use('Qt5Agg')
+
 import sys
 import signal
 from docopt import docopt

@@ -44,9 +44,12 @@ class DragonBrowser(QtWidgets.QMainWindow):
 
         self.setWindowTitle('DragonBrowser')
 
-        self.filename = filename or QtWidgets.QFileDialog.getOpenFileName(
+        if filename is None:
+            filename, _ = QtWidgets.QFileDialog.getOpenFileName(
                 self, 'Open file', os.environ['HOME']
             )
+        self.filename = filename
+
         if not self.filename:
             sys.exit()
 
